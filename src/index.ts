@@ -4,8 +4,8 @@ export type { FriendlyCaptchaHandle, FriendlyCaptchaProps } from "./FriendlyCapt
 export { useFriendlyCaptcha } from "./useFriendlyCaptcha";
 export type { UseFriendlyCaptchaOptions, UseFriendlyCaptchaResult } from "./useFriendlyCaptcha";
 
-export { FriendlyCaptchaProvider, useFriendlyCaptchaSdk } from "./provider";
-export type { FriendlyCaptchaProviderProps } from "./provider";
+export { FriendlyCaptchaProvider, useFriendlyCaptchaSdk, useSdkResolver } from "./provider";
+export type { FriendlyCaptchaProviderProps, SdkResolver } from "./provider";
 
 export { getSharedSdk, resetSharedSdk, setSharedSdk } from "./sdk";
 

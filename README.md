@@ -161,6 +161,7 @@ You can also pass an `sdk` instance directly to the provider, hook, or component
 
 > [!NOTE]
 >
+> - **SSR / islands:** the component renders a placeholder element on the server and activates the widget on the client, so it's safe with Astro islands (`client:load`), Next, etc. — the SDK is never constructed during render.
 > - **Security:** the API key is server-only. Only import `/server` on the server.
 > - **CSP:** the SDK patches `window.eval`; set `disableEvalPatching: true` if your CSP forbids it (this can affect some dev hot-reload setups).
 > - **Data residency:** set `apiEndpoint` on the widget **and** `endpoint` on the verify helper to `"eu"` for EU-only processing.

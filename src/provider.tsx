@@ -1,10 +1,25 @@
 "use client";
 
 import { FriendlyCaptchaSDK, type FriendlyCaptchaSDKOptions } from "@friendlycaptcha/sdk";
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { getSharedSdk } from "./sdk";
 
-const SdkContext = createContext<FriendlyCaptchaSDK | null>(null);
+/**
+ * A lazy resolver that returns the SDK instance, creating it the first time it
+ * is called. It must only be called on the client (inside an effect) — the SDK
+ * constructor touches `window`, so calling it during render breaks SSR.
+ */
+export type SdkResolver = () => FriendlyCaptchaSDK;
+
+const SdkContext = createContext<SdkResolver | null>(null);
 
 export interface FriendlyCaptchaProviderProps {
   /**
@@ -14,7 +29,7 @@ export interface FriendlyCaptchaProviderProps {
   sdk?: FriendlyCaptchaSDK;
   /**
    * Options used to construct the SDK instance when `sdk` is not provided.
-   * The instance is created once and kept stable for the provider's lifetime.
+   * The instance is created once, lazily, and kept stable for the provider's lifetime.
    */
   options?: FriendlyCaptchaSDKOptions;
   children: ReactNode;
@@ -27,23 +42,49 @@ export interface FriendlyCaptchaProviderProps {
  * module singleton. Use the provider when you need to configure the endpoint
  * (`apiEndpoint: "eu"`), disable eval patching for strict CSP, or share one
  * instance across the app.
+ *
+ * The SDK is never constructed during render (that would touch `window` and
+ * break server-side rendering) — it is created lazily the first time a widget
+ * mounts on the client.
  */
 export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCaptchaProviderProps) {
-  // Construct exactly once; never recreate across re-renders.
-  const instanceRef = useRef<FriendlyCaptchaSDK | null>(null);
-  if (!instanceRef.current) {
-    instanceRef.current = sdk ?? new FriendlyCaptchaSDK(options);
-  }
-  return <SdkContext.Provider value={instanceRef.current}>{children}</SdkContext.Provider>;
+  // Provider options are treated as fixed for its lifetime; capture once so the
+  // resolver identity stays stable across re-renders.
+  const optionsRef = useRef(options);
+  const resolver = useMemo<SdkResolver>(() => {
+    if (sdk) return () => sdk;
+    let instance: FriendlyCaptchaSDK | undefined;
+    return () => (instance ??= new FriendlyCaptchaSDK(optionsRef.current));
+  }, [sdk]);
+
+  return <SdkContext.Provider value={resolver}>{children}</SdkContext.Provider>;
 }
 
 /**
- * Resolves the SDK instance to use, in priority order:
+ * Resolves the lazy SDK resolver, in priority order:
  * 1. an explicit `override` (e.g. a `sdk` prop on the hook/component),
  * 2. the nearest {@link FriendlyCaptchaProvider},
  * 3. the lazily-created shared module singleton.
+ *
+ * The returned function constructs the SDK only when called — do that inside an
+ * effect, never during render.
  */
-export function useFriendlyCaptchaSdk(override?: FriendlyCaptchaSDK): FriendlyCaptchaSDK {
+export function useSdkResolver(override?: FriendlyCaptchaSDK): SdkResolver {
   const fromContext = useContext(SdkContext);
-  return override ?? fromContext ?? getSharedSdk();
+  if (override) return () => override;
+  return fromContext ?? getSharedSdk;
+}
+
+/**
+ * Returns the resolved {@link FriendlyCaptchaSDK} instance, or `null` during SSR
+ * and before the first client effect runs. Useful for advanced scenarios; most
+ * apps should use {@link FriendlyCaptchaProvider} and the component/hook instead.
+ */
+export function useFriendlyCaptchaSdk(override?: FriendlyCaptchaSDK): FriendlyCaptchaSDK | null {
+  const resolve = useSdkResolver(override);
+  const [sdk, setSdk] = useState<FriendlyCaptchaSDK | null>(null);
+  useEffect(() => {
+    setSdk(resolve());
+  }, [resolve]);
+  return sdk;
 }

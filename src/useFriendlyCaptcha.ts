@@ -10,7 +10,7 @@ import type {
   WidgetState,
 } from "@friendlycaptcha/sdk";
 import { useCallback, useEffect, useRef, useState, type RefCallback } from "react";
-import { useFriendlyCaptchaSdk } from "./provider";
+import { useSdkResolver } from "./provider";
 import type { FriendlyCaptchaCallbacks, WidgetConfig } from "./types";
 
 /** Options accepted by {@link useFriendlyCaptcha}. */
@@ -71,7 +71,14 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     onStateChange,
   } = options;
 
-  const sdk = useFriendlyCaptchaSdk(sdkOverride);
+  // Resolve the SDK lazily. The resolver is read during render (safe), but the
+  // SDK itself is only constructed inside the effect below — never during
+  // render — so server-side rendering never touches `window`.
+  const resolveSdk = useSdkResolver(sdkOverride);
+  const resolveSdkRef = useRef(resolveSdk);
+  useEffect(() => {
+    resolveSdkRef.current = resolveSdk;
+  });
 
   const [element, setElement] = useState<E | null>(null);
   const [widget, setWidget] = useState<WidgetHandle | null>(null);
@@ -95,7 +102,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
   useEffect(() => {
     if (!element) return;
 
-    const handle = sdk.createWidget({
+    const handle = resolveSdkRef.current().createWidget({
       element,
       sitekey,
       startMode,
@@ -148,7 +155,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
         setWidget(null);
       }
     };
-  }, [element, sdk, sitekey, startMode, theme, language, formFieldName, apiEndpoint]);
+  }, [element, sdkOverride, sitekey, startMode, theme, language, formFieldName, apiEndpoint]);
 
   const reset = useCallback(() => {
     widgetRef.current?.reset();
