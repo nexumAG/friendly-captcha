@@ -12,6 +12,15 @@ type Status =
   | { kind: "ok"; solvedAt: string | null }
   | { kind: "error"; message: string };
 
+/** Turn the API's ISO timestamp (nanosecond precision) into a readable local time. */
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
+    date,
+  );
+}
+
 /**
  * A React island that solves the captcha and verifies it through an Astro
  * Action (a server function). The token never has to be handled manually on the
@@ -49,7 +58,8 @@ export default function CaptchaForm({ sitekey }: Props) {
 
       {status.kind === "ok" && (
         <p className="status ok">
-          ✅ Verified server-side{status.solvedAt ? ` (solved at ${status.solvedAt})` : ""}.
+          ✅ Verified server-side
+          {status.solvedAt ? ` · solved at ${formatTimestamp(status.solvedAt)}` : ""}.
         </p>
       )}
       {status.kind === "error" && <p className="status error">❌ {status.message}</p>}
