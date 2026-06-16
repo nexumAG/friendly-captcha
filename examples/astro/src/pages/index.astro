@@ -1,0 +1,71 @@
+---
+import CaptchaForm from "../components/CaptchaForm.tsx";
+
+const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@nexumag/friendly-captcha · Astro example</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        max-width: 32rem;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      .captcha-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+      button {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .status.ok {
+        color: green;
+      }
+      .status.error {
+        color: crimson;
+      }
+      code {
+        background: rgba(125, 125, 125, 0.15);
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Friendly Captcha v2 — React + Astro Actions</h1>
+    <p>
+      The widget below is rendered with the <code>&lt;FriendlyCaptcha&gt;</code> React component as
+      an Astro island. On submit, the token is verified by a server-side Astro Action that calls
+      <code>verifyCaptchaResponse()</code>.
+    </p>
+
+    {
+      sitekey ? (
+        <CaptchaForm client:load sitekey={sitekey} />
+      ) : (
+        <p class="status error">
+          Set <code>PUBLIC_FRC_SITEKEY</code> (and <code>FRC_API_KEY</code>) in <code>.env</code> —
+          see <code>.env.example</code>.
+        </p>
+      )
+    }
+  </body>
+</html>
