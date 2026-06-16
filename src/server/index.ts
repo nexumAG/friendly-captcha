@@ -98,7 +98,9 @@ interface SiteverifyResponseBody {
  *   response: formData.get("frc-captcha-response") as string,
  *   apiKey: process.env.FRC_API_KEY!,
  * });
- * if (!result.success) return new Response("captcha failed", { status: 400 });
+ * if (!result.success) {
+ *   return new Response("captcha failed", { status: 400 });
+ * }
  * ```
  */
 export async function verifyCaptchaResponse(
@@ -107,7 +109,9 @@ export async function verifyCaptchaResponse(
   const { response, apiKey, sitekey, endpoint, fetch: fetchImpl = fetch, signal } = options;
 
   const body: Record<string, string> = { response };
-  if (sitekey) body.sitekey = sitekey;
+  if (sitekey) {
+    body.sitekey = sitekey;
+  }
 
   let res: Response;
   try {

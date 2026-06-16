@@ -15,7 +15,9 @@ type Status =
 /** Turn the API's ISO timestamp (nanosecond precision) into a readable local time. */
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
     date,
   );
@@ -32,7 +34,9 @@ export default function CaptchaForm({ sitekey }: Props) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!token) return;
+    if (!token) {
+      return;
+    }
     setStatus({ kind: "verifying" });
 
     const { data, error } = await actions.verifyCaptcha({ response: token });

@@ -46,7 +46,9 @@ describe("<FriendlyCaptcha />", () => {
     const { container } = render(<FriendlyCaptcha ref={ref} sitekey="FCTEST" />);
     const widget = createdWidgets[0];
 
-    if (widget) widget.response = "live-token";
+    if (widget) {
+      widget.response = "live-token";
+    }
     expect(ref.current?.getResponse()).toBe("live-token");
 
     ref.current?.reset();

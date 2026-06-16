@@ -52,7 +52,9 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
   // resolver identity stays stable across re-renders.
   const optionsRef = useRef(options);
   const resolver = useMemo<SdkResolver>(() => {
-    if (sdk) return () => sdk;
+    if (sdk) {
+      return () => sdk;
+    }
     let instance: FriendlyCaptchaSDK | undefined;
     return () => (instance ??= new FriendlyCaptchaSDK(optionsRef.current));
   }, [sdk]);
@@ -71,7 +73,9 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
  */
 export function useSdkResolver(override?: FriendlyCaptchaSDK): SdkResolver {
   const fromContext = useContext(SdkContext);
-  if (override) return () => override;
+  if (override) {
+    return () => override;
+  }
   return fromContext ?? getSharedSdk;
 }
 

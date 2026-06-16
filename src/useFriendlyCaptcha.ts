@@ -100,7 +100,9 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
   }, []);
 
   useEffect(() => {
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
     const handle = resolveSdkRef.current().createWidget({
       element,
