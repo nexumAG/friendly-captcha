@@ -27,6 +27,22 @@ jobs:
         env:
           GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
 
+      # Map the version to an npm dist-tag: a prerelease like `1.0.0-beta.1`
+      # publishes under `beta` (so it never becomes the default `latest`),
+      # while a stable `1.0.0` publishes under `latest`.
+      - name: Determine npm dist-tag
+        id: disttag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$version" == *-* ]]; then
+            label="${version#*-}"
+            echo "tag=${label%%.*}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
+
       - name: Install dependencies
         run: npm ci
 
@@ -34,6 +50,6 @@ jobs:
         run: npm run build
 
       - name: Publish
-        run: npm publish
+        run: npm publish --tag "${{ steps.disttag.outputs.tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
