@@ -10,6 +10,13 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@nexumag/friendly-captcha · Astro example</title>
+    <script is:inline>
+      // Set the initial theme before paint to avoid a flash; the React island
+      // takes over once it hydrates.
+      document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    </script>
   </head>
   <body>
     <main class="page">
@@ -68,22 +75,20 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
         --code-bg: rgba(15, 23, 42, 0.06);
       }
 
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0e1116;
-          --bg-accent: #161b22;
-          --surface: #171b21;
-          --border: #2a2f37;
-          --text: #e6e8eb;
-          --text-muted: #9aa3af;
-          --accent: #6366f1;
-          --accent-hover: #818cf8;
-          --ok-bg: rgba(34, 197, 94, 0.14);
-          --ok-text: #4ade80;
-          --error-bg: rgba(239, 68, 68, 0.14);
-          --error-text: #f87171;
-          --code-bg: rgba(255, 255, 255, 0.08);
-        }
+      :root[data-theme="dark"] {
+        --bg: #0e1116;
+        --bg-accent: #161b22;
+        --surface: #171b21;
+        --border: #2a2f37;
+        --text: #e6e8eb;
+        --text-muted: #9aa3af;
+        --accent: #6366f1;
+        --accent-hover: #818cf8;
+        --ok-bg: rgba(34, 197, 94, 0.14);
+        --ok-text: #4ade80;
+        --error-bg: rgba(239, 68, 68, 0.14);
+        --error-text: #f87171;
+        --code-bg: rgba(255, 255, 255, 0.08);
       }
 
       * {
@@ -115,6 +120,7 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
       }
 
       .card {
+        position: relative;
         width: 100%;
         max-width: 26rem;
         background: var(--surface);
@@ -191,6 +197,30 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
       .captcha-form button:disabled {
         opacity: 0.55;
         cursor: not-allowed;
+      }
+
+      /* Secondary outline icon button, pinned to the card's top-right corner. */
+      .captcha-form button.theme-toggle {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        display: grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        color: var(--text-muted);
+        background: transparent;
+        border: 1px solid var(--border);
+      }
+
+      .captcha-form button.theme-toggle:hover:not(:disabled) {
+        color: var(--text);
+        background: var(--bg-accent);
+      }
+
+      .captcha-form button.theme-toggle:hover:not(:disabled) {
+        background: var(--bg-accent);
       }
 
       .status {

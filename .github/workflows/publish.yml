@@ -22,23 +22,22 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@nexumag"
 
-      - name: Set version from release tag
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
-        env:
-          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
-
-      # Map the version to an npm dist-tag: a prerelease like `1.0.0-beta.1`
-      # publishes under `beta` (so it never becomes the default `latest`),
-      # while a stable `1.0.0` publishes under `latest`.
-      - name: Determine npm dist-tag
-        id: disttag
+      # The version in package.json is the source of truth. Make sure the
+      # release tag matches it, and derive the npm dist-tag from it (a prerelease
+      # like `1.0.0-beta.1` publishes under `beta`, a stable `1.0.0` under `latest`).
+      - name: Check tag matches version and pick dist-tag
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if [[ "$version" == *-* ]]; then
-            label="${version#*-}"
-            echo "tag=${label%%.*}" >> "$GITHUB_OUTPUT"
+          pkg_version="$(node -p "require('./package.json').version")"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [[ "$pkg_version" != "$tag_version" ]]; then
+            echo "::error::Release tag '$tag_version' does not match package.json version '$pkg_version'."
+            exit 1
+          fi
+          if [[ "$pkg_version" == *-* ]]; then
+            label="${pkg_version#*-}"
+            echo "DIST_TAG=${label%%.*}" >> "$GITHUB_ENV"
           else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "DIST_TAG=latest" >> "$GITHUB_ENV"
           fi
         env:
           GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
@@ -50,6 +49,6 @@ jobs:
         run: npm run build
 
       - name: Publish
-        run: npm publish --tag "${{ steps.disttag.outputs.tag }}"
+        run: npm publish --tag "$DIST_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
