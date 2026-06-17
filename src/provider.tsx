@@ -73,10 +73,13 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
  */
 export function useSdkResolver(override?: FriendlyCaptchaSDK): SdkResolver {
   const fromContext = useContext(SdkContext);
-  if (override) {
-    return () => override;
-  }
-  return fromContext ?? getSharedSdk;
+  // Memoize so the override resolver keeps a stable identity across renders;
+  // otherwise consumers using it as an effect dependency re-run every render.
+  const overrideResolver = useMemo<SdkResolver | null>(
+    () => (override ? () => override : null),
+    [override],
+  );
+  return overrideResolver ?? fromContext ?? getSharedSdk;
 }
 
 /**

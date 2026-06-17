@@ -37,6 +37,8 @@ export interface UseFriendlyCaptchaResult<E extends HTMLElement = HTMLDivElement
   getResponse: () => string | null;
   /** The underlying SDK widget handle, or `null` before it mounts. */
   widget: WidgetHandle | null;
+  /** The element the widget is mounted into, or `null` before it mounts. */
+  element: E | null;
 }
 
 /** Sentinel responses (e.g. `.UNSTARTED`, `.EXPIRED`) all start with a dot; a real token never does. */
@@ -154,7 +156,13 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
       handle.destroy();
       if (widgetRef.current === handle) {
         widgetRef.current = null;
+        // Clear reactive state too, so `solved`/`response`/`state` can't outlive
+        // the widget. Otherwise `solved` stays true while `getResponse()` (which
+        // reads the now-null ref) returns null — a form could submit an empty token.
         setWidget(null);
+        setState("init");
+        setResponse(null);
+        setError(null);
       }
     };
   }, [element, sdkOverride, sitekey, startMode, theme, language, formFieldName, apiEndpoint]);
@@ -174,5 +182,6 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     reset,
     getResponse,
     widget,
+    element,
   };
 }

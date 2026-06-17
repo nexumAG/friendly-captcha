@@ -117,13 +117,66 @@ describe("verifyCaptchaResponse", () => {
     }
   });
 
-  it("returns a failure when the response is not valid JSON", async () => {
+  it("classifies an error status with a non-JSON body as an http_error", async () => {
     const fetchImpl = mockFetch(async () => new Response("<html>oops</html>", { status: 500 }));
     const result = await verifyCaptchaResponse({ response: "tok", apiKey: "k", fetch: fetchImpl });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.errorCode).toBe("bad_request");
+      expect(result.errorCode).toBe("http_error");
       expect(result.status).toBe(500);
+    }
+  });
+
+  it("classifies a 2xx with an unparseable body as a bad_request", async () => {
+    const fetchImpl = mockFetch(async () => new Response("<html>oops</html>", { status: 200 }));
+    const result = await verifyCaptchaResponse({ response: "tok", apiKey: "k", fetch: fetchImpl });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errorCode).toBe("bad_request");
+      expect(result.status).toBe(200);
+    }
+  });
+
+  it("classifies an error status whose JSON body has no error_code as an http_error", async () => {
+    const fetchImpl = mockFetch(async () => jsonResponse({ success: false }, 500));
+    const result = await verifyCaptchaResponse({ response: "tok", apiKey: "k", fetch: fetchImpl });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errorCode).toBe("http_error");
+      expect(result.status).toBe(500);
+    }
+  });
+
+  it("treats a custom endpoint named like a prototype property as a URL", async () => {
+    const fetchImpl = mockFetch(async () => jsonResponse({ success: true, data: {} }));
+    await verifyCaptchaResponse({
+      response: "tok",
+      apiKey: "k",
+      endpoint: "constructor",
+      fetch: fetchImpl,
+    });
+    expect(fetchImpl.mock.calls[0]![0]).toBe("constructor");
+  });
+
+  it("aborts a hung request once the timeout elapses", async () => {
+    // Mimic real fetch: reject when the forwarded signal aborts, never otherwise.
+    const fetchImpl = vi.fn<typeof fetch>(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          (init!.signal as AbortSignal).addEventListener("abort", () => {
+            reject(new DOMException("The operation timed out.", "TimeoutError"));
+          });
+        }),
+    );
+    const result = await verifyCaptchaResponse({
+      response: "tok",
+      apiKey: "k",
+      fetch: fetchImpl,
+      timeoutMs: 10,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errorCode).toBe("network_error");
     }
   });
 });

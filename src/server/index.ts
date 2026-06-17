@@ -1,7 +1,7 @@
 /**
  * Server-side verification for Friendly Captcha v2.
  *
- * Runtime-agnostic: depends only on the global `fetch`, so it runs on Node 18+,
+ * Runtime-agnostic: depends only on the global `fetch`, so it runs on Node 20+,
  * Deno, Bun, edge runtimes, and Cloudflare Workers. It has **no** React or DOM
  * dependency and is exposed from the `@nexumag/friendly-captcha/server`
  * entry point so it never reaches the client bundle.
@@ -12,13 +12,42 @@
 /** Built-in endpoint shortcuts, or a full custom siteverify URL. */
 export type VerifyEndpoint = "global" | "eu" | (string & {});
 
-const ENDPOINT_URLS: Record<"global" | "eu", string> = {
-  global: "https://global.frcapi.com/api/v2/captcha/siteverify",
-  eu: "https://eu.frcapi.com/api/v2/captcha/siteverify",
-};
+const ENDPOINT_URLS = new Map<string, string>([
+  ["global", "https://global.frcapi.com/api/v2/captcha/siteverify"],
+  ["eu", "https://eu.frcapi.com/api/v2/captcha/siteverify"],
+]);
 
 function resolveEndpoint(endpoint: VerifyEndpoint = "global"): string {
-  return endpoint in ENDPOINT_URLS ? ENDPOINT_URLS[endpoint as "global" | "eu"] : endpoint;
+  // A Map miss (incl. a custom URL, with no prototype-key pitfalls) passes the
+  // value through unchanged so it is treated as a full siteverify URL.
+  return ENDPOINT_URLS.get(endpoint) ?? endpoint;
+}
+
+/** Default request timeout (ms) when the caller does not pass a `signal`/`timeoutMs`. */
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+/**
+ * Combines a caller-supplied abort signal with a timeout so a hung siteverify
+ * connection can never block the request indefinitely. `timeoutMs <= 0` disables
+ * the timeout and falls back to the caller's signal (or none).
+ */
+function resolveSignal(
+  signal: AbortSignal | undefined,
+  timeoutMs: number,
+): AbortSignal | undefined {
+  if (timeoutMs <= 0) {
+    return signal;
+  }
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
+/**
+ * Failure code synthesized when the body carries no API `error_code`: an error
+ * HTTP status is an `"http_error"`, a 2xx is a malformed `"bad_request"`.
+ */
+function fallbackErrorCode(res: Response): "bad_request" | "http_error" {
+  return res.ok ? "bad_request" : "http_error";
 }
 
 /** Error codes returned by the siteverify endpoint. */
@@ -44,8 +73,10 @@ export interface VerifyCaptchaOptions {
   endpoint?: VerifyEndpoint;
   /** Inject a custom `fetch` (e.g. for testing or a proxy). Defaults to global `fetch`. */
   fetch?: typeof fetch;
-  /** Abort signal forwarded to the request. */
+  /** Abort signal forwarded to the request. Combined with the default timeout. */
   signal?: AbortSignal;
+  /** Abort the request after this many ms. Defaults to 10000; set to 0 to disable. */
+  timeoutMs?: number;
 }
 
 /** Successful verification (`success: true`). */
@@ -64,8 +95,13 @@ export interface VerifyCaptchaSuccess {
 /** Failed verification (`success: false`), including transport/parse failures. */
 export interface VerifyCaptchaFailure {
   success: false;
-  /** Machine-readable error code. `"network_error"` for transport failures. */
-  errorCode: VerifyErrorCode | "network_error";
+  /**
+   * Machine-readable error code. Beyond the API's own codes, two are synthesized
+   * locally: `"network_error"` for transport failures (the request never
+   * completed) and `"http_error"` for an error HTTP status whose body carried no
+   * `error_code` (inspect `status` to distinguish e.g. a 500 from a 4xx).
+   */
+  errorCode: VerifyErrorCode | "network_error" | "http_error";
   /** Human-readable detail, when available. Do not depend on its exact wording. */
   detail?: string;
   /** HTTP status code, when a response was received. */
@@ -106,7 +142,15 @@ interface SiteverifyResponseBody {
 export async function verifyCaptchaResponse(
   options: VerifyCaptchaOptions,
 ): Promise<VerifyCaptchaResult> {
-  const { response, apiKey, sitekey, endpoint, fetch: fetchImpl = fetch, signal } = options;
+  const {
+    response,
+    apiKey,
+    sitekey,
+    endpoint,
+    fetch: fetchImpl = fetch,
+    signal,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = options;
 
   const body: Record<string, string> = { response };
   if (sitekey) {
@@ -122,7 +166,7 @@ export async function verifyCaptchaResponse(
         "X-API-Key": apiKey,
       },
       body: JSON.stringify(body),
-      signal,
+      signal: resolveSignal(signal, timeoutMs),
     });
   } catch (err) {
     return {
@@ -137,10 +181,14 @@ export async function verifyCaptchaResponse(
   try {
     parsed = (await res.json()) as SiteverifyResponseBody;
   } catch (err) {
+    // An error status (incl. an empty/204 body) is an HTTP failure, not a
+    // malformed request on our side — only a 2xx with unparseable JSON is.
     return {
       success: false,
-      errorCode: "bad_request",
-      detail: "Failed to parse siteverify response as JSON.",
+      errorCode: fallbackErrorCode(res),
+      detail: res.ok
+        ? "Failed to parse siteverify response as JSON."
+        : `siteverify returned HTTP ${res.status} with a non-JSON body.`,
       status: res.status,
       raw: err,
     };
@@ -156,9 +204,11 @@ export async function verifyCaptchaResponse(
     };
   }
 
+  // Prefer the API's own code; fall back to the HTTP-status-aware code so a 500
+  // never masquerades as a client-side "bad_request" in retry logic.
   return {
     success: false,
-    errorCode: parsed.error?.error_code ?? "bad_request",
+    errorCode: parsed.error?.error_code ?? fallbackErrorCode(res),
     detail: parsed.error?.detail,
     status: res.status,
     raw: parsed,

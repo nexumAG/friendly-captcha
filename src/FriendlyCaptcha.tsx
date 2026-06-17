@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  forwardRef,
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  type HTMLAttributes,
-  type RefCallback,
-} from "react";
+import { forwardRef, useImperativeHandle, type HTMLAttributes } from "react";
 import { useFriendlyCaptcha, type UseFriendlyCaptchaOptions } from "./useFriendlyCaptcha";
 
 /** Imperative handle exposed via `ref` on {@link FriendlyCaptcha}. */
@@ -66,6 +59,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       ref: setWidgetRef,
       reset,
       getResponse,
+      element,
     } = useFriendlyCaptcha<HTMLDivElement>({
       sitekey,
       startMode,
@@ -81,24 +75,16 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       onStateChange,
     });
 
-    const elementRef = useRef<HTMLDivElement | null>(null);
-    const composedRef = useCallback<RefCallback<HTMLDivElement>>(
-      (node) => {
-        elementRef.current = node;
-        setWidgetRef(node);
-      },
-      [setWidgetRef],
-    );
-
-    useImperativeHandle(ref, () => ({ reset, getResponse, getElement: () => elementRef.current }), [
+    useImperativeHandle(ref, () => ({ reset, getResponse, getElement: () => element }), [
       reset,
       getResponse,
+      element,
     ]);
 
     return (
       <div
         {...divProps}
-        ref={composedRef}
+        ref={setWidgetRef}
         className={className ? `frc-captcha ${className}` : "frc-captcha"}
       />
     );
