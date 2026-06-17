@@ -204,4 +204,6 @@ npm run dev
 
 ## 📄 License
 
-Copyright © nexum AG and its associated companies. All rights reserved. See [LICENSE.md](./LICENSE.md).
+Licensed under the Apache License, Version 2.0. See [LICENSE.md](./LICENSE.md).
+
+Copyright © nexum AG and its associated companies.

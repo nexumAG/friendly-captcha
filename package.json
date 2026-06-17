@@ -13,7 +13,7 @@
   ],
   "homepage": "https://github.com/nexumAG/friendly-captcha#readme",
   "bugs": "https://github.com/nexumAG/friendly-captcha/issues",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "author": "Nexum",
   "repository": {
     "type": "git",
@@ -51,9 +51,6 @@
       }
     },
     "./package.json": "./package.json"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "vite build && node scripts/copy-dts-to-cts.mjs",
