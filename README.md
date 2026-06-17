@@ -18,15 +18,8 @@ Modern, type-safe React bindings for [Friendly Captcha v2](https://developer.fri
 
 ## 👉 Getting Started
 
-> [!IMPORTANT]
-> This package is published to **GitHub Packages** under the `@nexumag` scope. Point the scope at the GitHub registry in your `.npmrc` (and authenticate with a token that has `read:packages`):
->
-> ```ini
-> @nexumag:registry=https://npm.pkg.github.com
-> ```
-
 ```bash
-npm install @nexumag/friendly-captcha
+npm install @nexum-ag/friendly-captcha
 ```
 
 > [!NOTE]
@@ -35,7 +28,7 @@ npm install @nexumag/friendly-captcha
 Render the widget inside your `<form>`. It injects a hidden `frc-captcha-response` input, so the token is submitted automatically with the form:
 
 ```tsx
-import { FriendlyCaptcha } from "@nexumag/friendly-captcha";
+import { FriendlyCaptcha } from "@nexum-ag/friendly-captcha";
 
 function ContactForm() {
   return (
@@ -80,7 +73,7 @@ const ref = useRef<FriendlyCaptchaHandle>(null);
 For full control, `useFriendlyCaptcha()` returns a `ref` to attach plus reactive state:
 
 ```tsx
-import { useFriendlyCaptcha } from "@nexumag/friendly-captcha";
+import { useFriendlyCaptcha } from "@nexum-ag/friendly-captcha";
 
 function Captcha() {
   const { ref, state, response, solved, error, reset } = useFriendlyCaptcha({
@@ -123,7 +116,7 @@ Callbacks: `onComplete(token)`, `onError(error)`, `onExpire()`, `onReset()`, `on
 The helper lives in a separate entry point and depends only on `fetch`, so it runs on Node 20+, Deno, Bun, edge runtimes, and Cloudflare Workers:
 
 ```ts
-import { verifyCaptchaResponse } from "@nexumag/friendly-captcha/server";
+import { verifyCaptchaResponse } from "@nexum-ag/friendly-captcha/server";
 
 const result = await verifyCaptchaResponse({
   response: formData.get("frc-captcha-response") as string,
@@ -150,7 +143,7 @@ See [`examples/astro`](./examples/astro) for an end-to-end demo using an Astro A
 By default a single SDK instance is created lazily and shared. To customize it — EU data residency, or relaxing eval-patching for a strict CSP — wrap your app in the provider:
 
 ```tsx
-import { FriendlyCaptchaProvider } from "@nexumag/friendly-captcha";
+import { FriendlyCaptchaProvider } from "@nexum-ag/friendly-captcha";
 
 <FriendlyCaptchaProvider options={{ apiEndpoint: "eu", disableEvalPatching: true }}>
   <App />
@@ -193,7 +186,7 @@ npm run dev
 - [**Vite**](https://vite.dev/) — library build (ESM + CJS + types) and the Vitest test runner.
 - [**Vitest**](https://vitest.dev/) — unit tests, jsdom + Testing Library.
 - [**oxc**](https://oxc.rs/) — `oxlint` for linting and `oxfmt` for formatting.
-- Published to [**GitHub Packages**](https://docs.github.com/packages) on each GitHub release (the version is taken from the release tag).
+- Published to [**npm**](https://www.npmjs.com/package/@nexum-ag/friendly-captcha) on each GitHub release (the version is taken from the release tag).
 
 ## 🐾 Useful links
 

@@ -3,7 +3,7 @@
  *
  * Runtime-agnostic: depends only on the global `fetch`, so it runs on Node 20+,
  * Deno, Bun, edge runtimes, and Cloudflare Workers. It has **no** React or DOM
- * dependency and is exposed from the `@nexumag/friendly-captcha/server`
+ * dependency and is exposed from the `@nexum-ag/friendly-captcha/server`
  * entry point so it never reaches the client bundle.
  *
  * Your API key is a secret — only ever use it on the server.
