@@ -4,6 +4,9 @@
 
 Modern, type-safe React bindings for [Friendly Captcha v2](https://developer.friendlycaptcha.com/docs/v2), built on the official [`@friendlycaptcha/sdk`](https://www.npmjs.com/package/@friendlycaptcha/sdk).
 
+> [!IMPORTANT]
+> **Unofficial & unaffiliated.** This is a community package maintained by [nexum AG](https://www.nexum.com). It is **not** developed, endorsed, or supported by Friendly Captcha GmbH, and nexum AG is not affiliated with Friendly Captcha in any way. "Friendly Captcha" is a trademark of its respective owner and is used here only to describe what this package integrates with. For the official product and SDK, see [friendlycaptcha.com](https://friendlycaptcha.com).
+
 👉 [Getting Started](#-getting-started)
 
 🧩 [Usage](#-usage)
@@ -52,11 +55,7 @@ Capture the token via `onComplete` when you control submission yourself:
 ```tsx
 const [token, setToken] = useState<string | null>(null);
 
-<FriendlyCaptcha
-  sitekey="FCMxxxxxxxxxxxxxxx"
-  onComplete={setToken}
-  onExpire={() => setToken(null)}
-/>;
+<FriendlyCaptcha sitekey="FCMxxxxxxxxxxxxxxx" onComplete={setToken} onExpire={() => setToken(null)} />;
 ```
 
 The component forwards a ref with imperative helpers:
