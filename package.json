@@ -14,7 +14,7 @@
   "homepage": "https://github.com/nexumAG/friendly-captcha#readme",
   "bugs": "https://github.com/nexumAG/friendly-captcha/issues",
   "license": "Apache-2.0",
-  "author": "Nexum",
+  "author": "nexum AG",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nexumAG/friendly-captcha.git"
@@ -22,7 +22,7 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE.md"
+    "LICENSE"
   ],
   "type": "module",
   "sideEffects": false,
