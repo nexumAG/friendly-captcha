@@ -1,6 +1,6 @@
 {
   "name": "@nexum-ag/friendly-captcha",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "Modern, type-safe React bindings for Friendly Captcha v2 — a declarative component, a headless hook, and a runtime-agnostic server-side verification helper.",
   "keywords": [
     "bot-protection",
