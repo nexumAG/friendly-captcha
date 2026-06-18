@@ -55,7 +55,11 @@ Capture the token via `onComplete` when you control submission yourself:
 ```tsx
 const [token, setToken] = useState<string | null>(null);
 
-<FriendlyCaptcha sitekey="FCMxxxxxxxxxxxxxxx" onComplete={setToken} onExpire={() => setToken(null)} />;
+<FriendlyCaptcha
+  sitekey="FCMxxxxxxxxxxxxxxx"
+  onComplete={setToken}
+  onExpire={() => setToken(null)}
+/>;
 ```
 
 The component forwards a ref with imperative helpers:
