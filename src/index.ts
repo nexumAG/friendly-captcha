@@ -4,8 +4,10 @@ export type { FriendlyCaptchaHandle, FriendlyCaptchaProps } from "./FriendlyCapt
 export { useFriendlyCaptcha } from "./useFriendlyCaptcha";
 export type { UseFriendlyCaptchaOptions, UseFriendlyCaptchaResult } from "./useFriendlyCaptcha";
 
-export { FriendlyCaptchaProvider, useFriendlyCaptchaSdk, useSdkResolver } from "./provider";
-export type { FriendlyCaptchaProviderProps, SdkResolver } from "./provider";
+// `useSdkResolver` / `SdkResolver` are deliberately not exported: they are the
+// internal plumbing the hook uses to resolve an SDK instance, not public API.
+export { FriendlyCaptchaProvider, useFriendlyCaptchaSdk } from "./provider";
+export type { FriendlyCaptchaProviderProps } from "./provider";
 
 export { getSharedSdk, resetSharedSdk, setSharedSdk } from "./sdk";
 

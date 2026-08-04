@@ -1,4 +1,5 @@
-import { FriendlyCaptchaSDK, type FriendlyCaptchaSDKOptions } from "@friendlycaptcha/sdk";
+import { FriendlyCaptchaSDK as FriendlyCaptchaSDKClass } from "@friendlycaptcha/sdk";
+import type { FriendlyCaptchaSDK, FriendlyCaptchaSDKOptions } from "./types";
 
 /**
  * A lazily-created, shared {@link FriendlyCaptchaSDK} instance.
@@ -21,7 +22,7 @@ let sharedSdk: FriendlyCaptchaSDK | undefined;
  */
 export function getSharedSdk(options?: FriendlyCaptchaSDKOptions): FriendlyCaptchaSDK {
   if (!sharedSdk) {
-    sharedSdk = new FriendlyCaptchaSDK(options);
+    sharedSdk = new FriendlyCaptchaSDKClass(options);
   }
   return sharedSdk;
 }

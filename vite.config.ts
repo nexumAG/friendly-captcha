@@ -11,8 +11,16 @@ export default defineConfig({
     dts({
       include: ["src"],
       exclude: ["src/**/*.test.{ts,tsx}", "src/**/__tests__/**"],
-      // Mirror the src tree into dist so the "./server" entry gets its own types.
       tsconfigPath: "./tsconfig.build.json",
+      // Flatten each entry's declarations into one self-contained file per entry
+      // (so "./server" still gets its own types) and inline the SDK's
+      // types into them. @friendlycaptcha/sdk declares no "types" condition in its
+      // exports map, so a `from "@friendlycaptcha/sdk"` left in our .d.ts is
+      // unresolvable for consumers on node16/nodenext resolution. Inlining keeps
+      // our public types self-contained and resolvable everywhere.
+      bundleTypes: {
+        bundledPackages: ["@friendlycaptcha/sdk"],
+      },
     }),
   ],
   build: {
@@ -42,5 +50,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    coverage: {
+      include: ["src/**"],
+      exclude: ["src/**/__tests__/**"],
+    },
   },
 });

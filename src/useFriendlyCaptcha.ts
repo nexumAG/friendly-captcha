@@ -1,17 +1,20 @@
 "use client";
 
 import type {
-  FriendlyCaptchaSDK,
   FRCWidgetCompleteEvent,
   FRCWidgetStateChangeEvent,
   FRCWidgetWidgetErrorEvent,
-  WidgetErrorData,
-  WidgetHandle,
-  WidgetState,
 } from "@friendlycaptcha/sdk";
 import { useCallback, useEffect, useRef, useState, type RefCallback } from "react";
 import { useSdkResolver } from "./provider";
-import type { FriendlyCaptchaCallbacks, WidgetConfig } from "./types";
+import type {
+  FriendlyCaptchaCallbacks,
+  FriendlyCaptchaSDK,
+  WidgetConfig,
+  WidgetErrorData,
+  WidgetHandle,
+  WidgetState,
+} from "./types";
 
 /** Options accepted by {@link useFriendlyCaptcha}. */
 export interface UseFriendlyCaptchaOptions extends WidgetConfig, FriendlyCaptchaCallbacks {

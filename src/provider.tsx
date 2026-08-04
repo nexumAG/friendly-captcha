@@ -1,6 +1,6 @@
 "use client";
 
-import { FriendlyCaptchaSDK, type FriendlyCaptchaSDKOptions } from "@friendlycaptcha/sdk";
+import { FriendlyCaptchaSDK as FriendlyCaptchaSDKClass } from "@friendlycaptcha/sdk";
 import {
   createContext,
   useContext,
@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { getSharedSdk } from "./sdk";
+import type { FriendlyCaptchaSDK, FriendlyCaptchaSDKOptions } from "./types";
 
 /**
  * A lazy resolver that returns the SDK instance, creating it the first time it
@@ -56,7 +57,7 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
       return () => sdk;
     }
     let instance: FriendlyCaptchaSDK | undefined;
-    return () => (instance ??= new FriendlyCaptchaSDK(optionsRef.current));
+    return () => (instance ??= new FriendlyCaptchaSDKClass(optionsRef.current));
   }, [sdk]);
 
   return <SdkContext.Provider value={resolver}>{children}</SdkContext.Provider>;
