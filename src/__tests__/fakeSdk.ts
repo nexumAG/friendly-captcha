@@ -1,11 +1,20 @@
 import { vi } from "vitest";
-import type { CreateWidgetOptions, WidgetState } from "@friendlycaptcha/sdk";
+import type {
+  CreateWidgetOptions,
+  FriendlyCaptchaSDKOptions,
+  WidgetState,
+} from "@friendlycaptcha/sdk";
+import type { FriendlyCaptchaSDK as PublicFriendlyCaptchaSDK } from "../types";
 
 /** Every widget the fake SDK has created, in order. Inspect in tests. */
 export const createdWidgets: FakeWidget[] = [];
 
+/** Every fake SDK instance constructed, in order. Inspect in tests. */
+export const createdSdks: FriendlyCaptchaSDK[] = [];
+
 export function resetFakeSdk(): void {
   createdWidgets.length = 0;
+  createdSdks.length = 0;
 }
 
 /**
@@ -23,7 +32,11 @@ export class FakeWidget {
     this.isDestroyed = true;
   });
 
-  constructor(readonly element: HTMLElement) {
+  constructor(
+    readonly element: HTMLElement,
+    /** The SDK instance that created this widget — asserts which one was resolved. */
+    readonly sdk: FriendlyCaptchaSDK,
+  ) {
     createdWidgets.push(this);
   }
 
@@ -45,9 +58,24 @@ export class FakeWidget {
 }
 
 export class FriendlyCaptchaSDK {
-  createWidget(opts: CreateWidgetOptions): FakeWidget {
-    return new FakeWidget(opts.element);
+  constructor(readonly options?: FriendlyCaptchaSDKOptions) {
+    createdSdks.push(this);
   }
+
+  createWidget(opts: CreateWidgetOptions): FakeWidget {
+    return new FakeWidget(opts.element, this);
+  }
+}
+
+/**
+ * A fake SDK typed as the library's public SDK interface.
+ *
+ * The fake implements only the members the bindings actually call, so it is cast
+ * rather than stubbing the rest of the SDK surface. Type-level fidelity against
+ * the real SDK is covered separately by `sdkTypes.test.ts`.
+ */
+export function createFakeSdk(options?: FriendlyCaptchaSDKOptions): PublicFriendlyCaptchaSDK {
+  return new FriendlyCaptchaSDK(options) as unknown as PublicFriendlyCaptchaSDK;
 }
 
 /** Dispatch a Friendly Captcha custom event on the widget's element. */

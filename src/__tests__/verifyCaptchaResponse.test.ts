@@ -179,4 +179,61 @@ describe("verifyCaptchaResponse", () => {
       expect(result.errorCode).toBe("network_error");
     }
   });
+
+  it("aborts when the caller's signal fires, with the timeout still armed", async () => {
+    const controller = new AbortController();
+    const fetchImpl = vi.fn<typeof fetch>(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          (init!.signal as AbortSignal).addEventListener("abort", () => {
+            reject(new DOMException("Aborted.", "AbortError"));
+          });
+        }),
+    );
+
+    const pending = verifyCaptchaResponse({
+      response: "tok",
+      apiKey: "k",
+      fetch: fetchImpl,
+      signal: controller.signal,
+    });
+    controller.abort();
+    const result = await pending;
+
+    // The forwarded signal is the combination of the caller's and the timeout.
+    expect(fetchImpl.mock.calls[0]![1]!.signal).not.toBe(controller.signal);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errorCode).toBe("network_error");
+    }
+  });
+
+  it("forwards no signal when the timeout is disabled with timeoutMs: 0", async () => {
+    const fetchImpl = mockFetch(async () => jsonResponse({ success: true }));
+
+    const result = await verifyCaptchaResponse({
+      response: "tok",
+      apiKey: "k",
+      fetch: fetchImpl,
+      timeoutMs: 0,
+    });
+
+    expect(result.success).toBe(true);
+    expect(fetchImpl.mock.calls[0]![1]!.signal).toBeUndefined();
+  });
+
+  it("still honours a caller signal when the timeout is disabled", async () => {
+    const controller = new AbortController();
+    const fetchImpl = mockFetch(async () => jsonResponse({ success: true }));
+
+    await verifyCaptchaResponse({
+      response: "tok",
+      apiKey: "k",
+      fetch: fetchImpl,
+      timeoutMs: 0,
+      signal: controller.signal,
+    });
+
+    expect(fetchImpl.mock.calls[0]![1]!.signal).toBe(controller.signal);
+  });
 });
