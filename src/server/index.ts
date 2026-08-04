@@ -1,7 +1,7 @@
 /**
  * Server-side verification for Friendly Captcha v2.
  *
- * Runtime-agnostic: depends only on the global `fetch`, so it runs on Node 20+,
+ * Runtime-agnostic: depends only on the global `fetch`, so it runs on Node 22+,
  * Deno, Bun, edge runtimes, and Cloudflare Workers. It has **no** React or DOM
  * dependency and is exposed from the `@nexum-ag/friendly-captcha/server`
  * entry point so it never reaches the client bundle.
