@@ -161,7 +161,7 @@ You can also pass an `sdk` instance directly to the provider, hook, or component
 > - **Security:** the API key is server-only. Only import `/server` on the server.
 > - **CSP:** the SDK patches `window.eval`; set `disableEvalPatching: true` if your CSP forbids it (this can affect some dev hot-reload setups).
 > - **Data residency:** set `apiEndpoint` on the widget **and** `endpoint` on the verify helper to `"eu"` for EU-only processing.
-> - **TypeScript:** both entry points resolve under `bundler`, `node16` and `nodenext`. Declarations are self-contained, so you don't need `@friendlycaptcha/sdk`'s own types to be resolvable. `WidgetHandle` and `FriendlyCaptchaSDK` are exposed as structural interfaces — an SDK instance you construct yourself is assignable to them.
+> - **TypeScript:** both entry points resolve under `bundler`, `node16` and `nodenext`. Declarations are self-contained, so you don't need `@friendlycaptcha/sdk`'s own types to be resolvable. `WidgetHandle` and `FriendlyCaptchaSDK` are exposed as structural interfaces — an SDK instance you construct yourself is assignable to them, but not the other way round (the SDK's classes have `private` members). To pass a widget or SDK this package returns to code typed against `@friendlycaptcha/sdk`, cast it (`as unknown as import("@friendlycaptcha/sdk").WidgetHandle`) or keep a reference to your own instance.
 
 ## 🧪 Local development
 

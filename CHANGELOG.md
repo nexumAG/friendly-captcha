@@ -34,6 +34,15 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). U
   instance you create from `@friendlycaptcha/sdk` remains assignable to both. The Risk
   Intelligence API and the internal `setState` escape hatch are not covered — import
   `@friendlycaptcha/sdk` directly for those.
+
+  The compatibility is one-way. Values this package hands back — `getSharedSdk()`, the
+  hook's `widget` — are no longer assignable to the SDK's own `FriendlyCaptchaSDK` and
+  `WidgetHandle` types, because private members can only be satisfied by the class that
+  declares them. If you annotate against those SDK types you'll get `TS2740` naming the
+  same type on both sides; add a cast
+  (`as unknown as import("@friendlycaptcha/sdk").WidgetHandle`), or construct the SDK
+  yourself and keep your own reference.
+
 - `@friendlycaptcha/sdk` is now a caret range (`^1.0.2`) instead of an exact pin, so it
   deduplicates with a consumer's own copy. Two copies of the SDK means two background
   agent iframes on the page.
@@ -53,6 +62,9 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). U
   every publish. `node10` resolution is intentionally not checked; this package requires
   Node 22+ and React 19.
 - `npm run test:coverage`.
+- `WidgetResetOptions` is now exported from the package entry point. It is the parameter
+  type of the public `WidgetHandle.reset()`, and with the SDK's types inlined this
+  package is the only place a consumer can import it from.
 
 ## [1.0.0-beta.6] - 2026-06-18
 

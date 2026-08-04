@@ -14,6 +14,16 @@
  * therefore declared here as structural interfaces covering the members this
  * library surfaces. A real SDK instance satisfies them, and
  * `src/__tests__/sdkTypes.test.ts` fails if upstream drifts away from them.
+ *
+ * That compatibility is **one-way**, and unavoidably so: private members can only
+ * ever be satisfied by the class that declares them, so a value typed as one of
+ * our interfaces is not assignable *back* to the SDK's class, even when it is
+ * that exact instance at runtime. TypeScript reports this as `TS2740` naming the
+ * same type on both sides, which reads like a bug but is not. Passing a value
+ * this library returns to code typed against `@friendlycaptcha/sdk` needs a cast
+ * (`as unknown as import("@friendlycaptcha/sdk").WidgetHandle`); if you want to
+ * avoid the cast, construct the SDK yourself and keep your own reference — that
+ * instance flows into the provider, hook, and component unchanged.
  */
 export type {
   APIEndpoint,
@@ -39,10 +49,12 @@ import type {
 /**
  * A mounted Friendly Captcha widget.
  *
- * Structurally compatible with the SDK's `WidgetHandle` — the instance you get
- * back from {@link UseFriendlyCaptchaResult.widget} *is* an SDK widget handle.
- * Risk Intelligence handles and the internal `setState` escape hatch are not
- * covered; import `@friendlycaptcha/sdk` directly if you need those.
+ * The instance you get back from {@link UseFriendlyCaptchaResult.widget} *is* an
+ * SDK widget handle at runtime, and a real handle is assignable to this interface.
+ * The reverse does not hold: assigning it to the SDK's `WidgetHandle` type needs a
+ * cast, because that class has `private` members (see the note at the top of this
+ * file). Risk Intelligence handles and the internal `setState` escape hatch are
+ * not covered; import `@friendlycaptcha/sdk` directly if you need those.
  */
 export interface WidgetHandle {
   /** A random ID that uniquely identifies this widget in this session. */
@@ -84,10 +96,13 @@ export interface WidgetHandle {
 /**
  * A Friendly Captcha SDK instance.
  *
- * Structurally compatible with the SDK's `FriendlyCaptchaSDK` class, so an
- * instance you construct yourself can be passed to {@link FriendlyCaptchaProvider},
- * the hook, or the component. The Risk Intelligence API is deliberately not
- * covered here — keep a reference to your own instance if you use it.
+ * An instance you construct from the SDK is assignable to this interface, so it can
+ * be passed to {@link FriendlyCaptchaProvider}, the hook, or the component. Going
+ * the other way — assigning what {@link getSharedSdk} returns to the SDK's
+ * `FriendlyCaptchaSDK` type — needs a cast, because that class has `private`
+ * members (see the note at the top of this file). The Risk Intelligence API is
+ * deliberately not covered here — keep a reference to your own instance if you
+ * use it.
  */
 export interface FriendlyCaptchaSDK {
   /** Resolves to all widgets currently attached. */
