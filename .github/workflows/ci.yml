@@ -5,18 +5,54 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# A newer push to the same branch supersedes an in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The supported LTS lines: 22 is maintenance LTS (until 2027-04), 24 is
+        # active LTS. Node 20 went end-of-life on 2026-04-30.
+        node-version: [22, 24]
+    name: node ${{ matrix.node-version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+      # Builds, then checks the published shape and that types resolve under
+      # node16/nodenext — the resolution mode most consumers are on.
+      - run: npm run check:pkg
+
+  # Typechecks the Astro example against the built library, so a change to the
+  # public API (or a rename) can't silently break the only end-to-end demo.
+  # `astro build` is not run: the example is `output: "server"` with no adapter.
+  example:
+    runs-on: ubuntu-latest
+    name: astro example
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
       - run: npm run build
+      - run: npm ci
+        working-directory: examples/astro
+      - run: npm run typecheck
+        working-directory: examples/astro

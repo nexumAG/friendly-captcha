@@ -1,4 +1,4 @@
-import { verifyCaptchaResponse } from "@nexumag/friendly-captcha/server";
+import { verifyCaptchaResponse } from "@nexum-ag/friendly-captcha/server";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro:schema";
 

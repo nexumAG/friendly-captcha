@@ -1,4 +1,4 @@
-name: Publish to GitHub Packages
+name: Publish to npm
 
 on:
   release:
@@ -6,21 +6,22 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  # Required for npm trusted publishing (OIDC) and provenance attestation.
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@nexumag"
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
 
       # The version in package.json is the source of truth. Make sure the
       # release tag matches it, and derive the npm dist-tag from it (a prerelease
@@ -45,10 +46,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      # Builds, then guards the published shape: entry points resolve, and types
+      # resolve under node16/nodenext.
+      - name: Build and verify package
+        run: npm run check:pkg
 
+      # No NODE_AUTH_TOKEN: npm >= 11.5.1 (Node 24 ships 11.16) authenticates via
+      # the OIDC token above, which also produces a provenance attestation.
+      # Requires a trusted publisher for this repo + `publish.yml` to be configured
+      # under Settings -> Trusted publishing on npmjs.com. Renaming this file breaks
+      # publishing until the trusted publisher is updated to match.
       - name: Publish
         run: npm publish --tag "$DIST_TAG"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

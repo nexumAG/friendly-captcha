@@ -1,4 +1,4 @@
-import { FriendlyCaptcha } from "@nexumag/friendly-captcha";
+import { FriendlyCaptcha } from "@nexum-ag/friendly-captcha";
 import { actions } from "astro:actions";
 import { useEffect, useState, type FormEvent } from "react";
 

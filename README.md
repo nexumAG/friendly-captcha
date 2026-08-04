@@ -116,7 +116,7 @@ Callbacks: `onComplete(token)`, `onError(error)`, `onExpire()`, `onReset()`, `on
 > [!IMPORTANT]
 > Always verify the token on your server — a client-side token alone is not proof. Your API key is a secret and must never reach the browser.
 
-The helper lives in a separate entry point and depends only on `fetch`, so it runs on Node 20+, Deno, Bun, edge runtimes, and Cloudflare Workers:
+The helper lives in a separate entry point and depends only on `fetch`, so it runs on Node 22+, Deno, Bun, edge runtimes, and Cloudflare Workers:
 
 ```ts
 import { verifyCaptchaResponse } from "@nexum-ag/friendly-captcha/server";
@@ -161,17 +161,21 @@ You can also pass an `sdk` instance directly to the provider, hook, or component
 > - **Security:** the API key is server-only. Only import `/server` on the server.
 > - **CSP:** the SDK patches `window.eval`; set `disableEvalPatching: true` if your CSP forbids it (this can affect some dev hot-reload setups).
 > - **Data residency:** set `apiEndpoint` on the widget **and** `endpoint` on the verify helper to `"eu"` for EU-only processing.
-> - **TypeScript:** use `"moduleResolution": "bundler"` (the default for Vite/Astro/Next). The client entry re-exposes types from `@friendlycaptcha/sdk`, whose types are not resolvable under raw `node16`/`nodenext` resolution; the `/server` entry resolves cleanly everywhere.
+> - **TypeScript:** both entry points resolve under `bundler`, `node16` and `nodenext`. Declarations are self-contained, so you don't need `@friendlycaptcha/sdk`'s own types to be resolvable. `WidgetHandle` and `FriendlyCaptchaSDK` are exposed as structural interfaces — an SDK instance you construct yourself is assignable to them.
 
 ## 🧪 Local development
 
+Requires Node 22.22+ or 24.15+ (an active or maintenance LTS line — Node 20 is end-of-life).
+
 ```bash
 npm install
-npm run build       # build dist/ (ESM + CJS + types)
-npm test            # vitest
-npm run typecheck   # tsc --noEmit
-npm run lint        # oxlint
-npm run format      # oxfmt
+npm run build         # build dist/ (ESM + CJS + types)
+npm test              # vitest
+npm run test:coverage # vitest + coverage report
+npm run typecheck     # tsc --noEmit
+npm run lint          # oxlint
+npm run format        # oxfmt
+npm run check:pkg     # build, then publint + are-the-types-wrong
 ```
 
 Run the example (after building the library so its `dist/` exists):

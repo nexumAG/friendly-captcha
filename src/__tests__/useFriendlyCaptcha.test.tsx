@@ -103,6 +103,24 @@ describe("useFriendlyCaptcha", () => {
     expect(screen.getByTestId("solved").textContent).toBe("false");
   });
 
+  it("fires onReset when the widget is reset", () => {
+    const onReset = vi.fn();
+    render(<Harness sitekey="FCTEST" onReset={onReset} />);
+
+    act(() => {
+      emit(mountEl(), "frc:widget.statechange", { state: "completed", response: "token-abc" });
+    });
+    expect(screen.getByTestId("solved").textContent).toBe("true");
+
+    act(() => {
+      emit(mountEl(), "frc:widget.reset", { state: "init", response: ".UNSTARTED" });
+      emit(mountEl(), "frc:widget.statechange", { state: "init", response: ".UNSTARTED" });
+    });
+
+    expect(onReset).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("solved").textContent).toBe("false");
+  });
+
   it("destroys the widget on unmount", () => {
     const { unmount } = render(<Harness sitekey="FCTEST" />);
     const widget = createdWidgets[0];

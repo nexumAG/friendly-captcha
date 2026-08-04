@@ -1,8 +1,8 @@
 // vite-plugin-dts only emits `.d.ts`. For correct types under Node16/NodeNext
 // module resolution when consumers `require()` the CJS build, we also need
-// matching `.d.cts` files. Since every relative import in these declarations is
-// extensionless and type-only, a 1:1 copy resolves correctly for both the ESM
-// (`.d.ts`) and CJS (`.d.cts`) entry points.
+// matching `.d.cts` files. `bundleTypes` (see vite.config.ts) emits one
+// self-contained file per entry with no relative or external imports left in it,
+// so a 1:1 copy is valid for both the ESM (`.d.ts`) and CJS (`.d.cts`) entries.
 import { cp, readdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
