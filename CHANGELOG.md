@@ -3,10 +3,14 @@
 All notable changes to this package are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
-package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Until
-`1.0.0` the public API may still change between prereleases.
+package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-08-05
+
+First stable release. The public API is now covered by semantic versioning: breaking
+changes to it require a major version.
+
+No functional change since `1.0.0-beta.7` other than the removal below.
 
 ### Removed
 
@@ -97,7 +101,8 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). U
   hook, `FriendlyCaptchaProvider` for sharing a configured SDK instance, and the
   runtime-agnostic `verifyCaptchaResponse` helper on the `/server` entry point.
 
-[unreleased]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.7...HEAD
+[unreleased]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.7...v1.0.0
 [1.0.0-beta.7]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.6...v1.0.0-beta.7
 [1.0.0-beta.6]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.1...v1.0.0-beta.6
 [1.0.0-beta.1]: https://github.com/nexumAG/friendly-captcha/releases/tag/v1.0.0-beta.1
