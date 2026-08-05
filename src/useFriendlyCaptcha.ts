@@ -76,9 +76,8 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     onStateChange,
   } = options;
 
-  // Resolve the SDK lazily. The resolver is read during render (safe), but the
-  // SDK itself is only constructed inside the effect below — never during
-  // render — so server-side rendering never touches `window`.
+  // Reading the resolver during render is safe; calling it is not. The SDK is only
+  // constructed inside the effect below, so SSR never touches `window`.
   const resolveSdk = useSdkResolver(sdkOverride);
   const resolveSdkRef = useRef(resolveSdk);
   useEffect(() => {

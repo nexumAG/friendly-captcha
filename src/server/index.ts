@@ -18,19 +18,15 @@ const ENDPOINT_URLS = new Map<string, string>([
 ]);
 
 function resolveEndpoint(endpoint: VerifyEndpoint = "global"): string {
-  // A Map miss (incl. a custom URL, with no prototype-key pitfalls) passes the
-  // value through unchanged so it is treated as a full siteverify URL.
+  // A Map rather than an object literal: a miss passes a custom URL through unchanged
+  // with no prototype-key pitfalls.
   return ENDPOINT_URLS.get(endpoint) ?? endpoint;
 }
 
 /** Default request timeout (ms) when the caller does not pass a `signal`/`timeoutMs`. */
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-/**
- * Combines a caller-supplied abort signal with a timeout so a hung siteverify
- * connection can never block the request indefinitely. `timeoutMs <= 0` disables
- * the timeout and falls back to the caller's signal (or none).
- */
+/** `timeoutMs <= 0` disables the timeout, falling back to the caller's signal or none. */
 function resolveSignal(
   signal: AbortSignal | undefined,
   timeoutMs: number,

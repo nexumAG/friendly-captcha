@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Until
 `1.0.0` the public API may still change between prereleases.
 
+## [Unreleased]
+
+### Removed
+
+- `WidgetResetOptions` is no longer exported. It was added in `1.0.0-beta.7`, before we
+  noticed that its only member is `trigger`, which the SDK marks `@internal` and which
+  merely labels who caused a reset in the `frc:widget.reset` event. Exporting it would
+  have let application code claim a reset came from the widget or the agent when it came
+  from the page, so `reset()` stays argument-less on both the hook and the component's
+  `ref`. The optional parameter remains on `WidgetHandle.reset()` so that a real SDK
+  handle still satisfies the interface; if you genuinely need `trigger`, use the hook's
+  `widget` and import the type from `@friendlycaptcha/sdk` directly.
+
 ## [1.0.0-beta.7] - 2026-08-04
 
 ### Fixed
@@ -64,7 +77,8 @@ package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). U
 - `npm run test:coverage`.
 - `WidgetResetOptions` is now exported from the package entry point. It is the parameter
   type of the public `WidgetHandle.reset()`, and with the SDK's types inlined this
-  package is the only place a consumer can import it from.
+  package is the only place a consumer can import it from. (Reverted before `1.0.0` —
+  see **Unreleased**.)
 
 ## [1.0.0-beta.6] - 2026-06-18
 
