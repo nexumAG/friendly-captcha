@@ -1,24 +1,15 @@
 import { FriendlyCaptchaSDK as FriendlyCaptchaSDKClass } from "@friendlycaptcha/sdk";
 import type { FriendlyCaptchaSDK, FriendlyCaptchaSDKOptions } from "./types";
 
-/**
- * A lazily-created, shared {@link FriendlyCaptchaSDK} instance.
- *
- * Generally there should only be one SDK instance per page (it manages a single
- * background agent iframe). The hook and component use this shared instance by
- * default. To customize it — e.g. to target the EU endpoint or disable eval
- * patching — either call {@link getSharedSdk} with options *before* the first
- * widget mounts, or wrap your app in `FriendlyCaptchaProvider` with your own
- * instance.
- */
 let sharedSdk: FriendlyCaptchaSDK | undefined;
 
 /**
  * Returns the shared SDK instance, creating it on first call.
  *
- * The `options` argument only takes effect on the call that actually
- * constructs the instance; later calls return the existing instance and ignore
- * their `options`. For per-app configuration prefer `FriendlyCaptchaProvider`.
+ * There should only be one instance per page — each one manages a background agent
+ * iframe. `options` therefore only takes effect on the call that constructs the
+ * instance; later calls ignore theirs. For per-app configuration prefer
+ * `FriendlyCaptchaProvider`.
  */
 export function getSharedSdk(options?: FriendlyCaptchaSDKOptions): FriendlyCaptchaSDK {
   if (!sharedSdk) {

@@ -43,14 +43,10 @@ export interface FriendlyCaptchaProviderProps {
  * module singleton. Use the provider when you need to configure the endpoint
  * (`apiEndpoint: "eu"`), disable eval patching for strict CSP, or share one
  * instance across the app.
- *
- * The SDK is never constructed during render (that would touch `window` and
- * break server-side rendering) — it is created lazily the first time a widget
- * mounts on the client.
  */
 export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCaptchaProviderProps) {
-  // Provider options are treated as fixed for its lifetime; capture once so the
-  // resolver identity stays stable across re-renders.
+  // Options are fixed for the provider's lifetime; capture once so the resolver
+  // identity stays stable across re-renders.
   const optionsRef = useRef(options);
   const resolver = useMemo<SdkResolver>(() => {
     if (sdk) {
@@ -68,14 +64,11 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
  * 1. an explicit `override` (e.g. a `sdk` prop on the hook/component),
  * 2. the nearest {@link FriendlyCaptchaProvider},
  * 3. the lazily-created shared module singleton.
- *
- * The returned function constructs the SDK only when called — do that inside an
- * effect, never during render.
  */
 export function useSdkResolver(override?: FriendlyCaptchaSDK): SdkResolver {
   const fromContext = useContext(SdkContext);
-  // Memoize so the override resolver keeps a stable identity across renders;
-  // otherwise consumers using it as an effect dependency re-run every render.
+  // Stable identity across renders, or consumers using it as an effect dependency
+  // re-run every render.
   const overrideResolver = useMemo<SdkResolver | null>(
     () => (override ? () => override : null),
     [override],

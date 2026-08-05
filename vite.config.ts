@@ -12,12 +12,10 @@ export default defineConfig({
       include: ["src"],
       exclude: ["src/**/*.test.{ts,tsx}", "src/**/__tests__/**"],
       tsconfigPath: "./tsconfig.build.json",
-      // Flatten each entry's declarations into one self-contained file per entry
-      // (so "./server" still gets its own types) and inline the SDK's
-      // types into them. @friendlycaptcha/sdk declares no "types" condition in its
-      // exports map, so a `from "@friendlycaptcha/sdk"` left in our .d.ts is
-      // unresolvable for consumers on node16/nodenext resolution. Inlining keeps
-      // our public types self-contained and resolvable everywhere.
+      // One self-contained .d.ts per entry, with the SDK's types inlined.
+      // @friendlycaptcha/sdk declares no "types" condition in its exports map, so any
+      // `from "@friendlycaptcha/sdk"` left in our declarations is unresolvable for
+      // consumers on node16/nodenext.
       bundleTypes: {
         bundledPackages: ["@friendlycaptcha/sdk"],
       },
@@ -35,7 +33,8 @@ export default defineConfig({
       fileName: (format, entryName) => `${entryName}.${format === "es" ? "js" : "cjs"}`,
     },
     rollupOptions: {
-      // Never bundle React or the SDK — they are peer dependencies.
+      // React is a peer dependency and the SDK a runtime one; bundling either would
+      // duplicate it (two SDK copies means two background agent iframes).
       external: [
         "react",
         "react-dom",
