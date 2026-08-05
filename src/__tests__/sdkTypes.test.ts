@@ -16,6 +16,11 @@
 import { FriendlyCaptchaSDK as RealFriendlyCaptchaSDK } from "@friendlycaptcha/sdk";
 import type { WidgetHandle as RealWidgetHandle } from "@friendlycaptcha/sdk";
 import { describe, expect, it } from "vitest";
+// `WidgetResetOptions` must stay off the public entry point: its only member is
+// the SDK's `@internal` `trigger`. If someone re-exports it from `../index`, this
+// import stops erroring and `@ts-expect-error` fails the typecheck.
+// @ts-expect-error - deliberately not public; see the note in ../types.ts
+import type { WidgetResetOptions as _PublicWidgetResetOptions } from "../index";
 import type { FriendlyCaptchaSDK, WidgetHandle } from "../types";
 
 /** Fails to compile unless `Source` is assignable to `Target`. */

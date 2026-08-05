@@ -23,6 +23,5 @@ export type {
   WidgetErrorData,
   WidgetHandle,
   WidgetMode,
-  WidgetResetOptions,
   WidgetState,
 } from "./types";

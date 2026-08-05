@@ -33,10 +33,18 @@ export type {
   WidgetErrorCode,
   WidgetErrorData,
   WidgetMode,
-  WidgetResetOptions,
   WidgetState,
 } from "@friendlycaptcha/sdk";
 
+// `WidgetResetOptions` is imported but deliberately **not** re-exported. Its only
+// member is `trigger`, which the SDK marks `@internal` ("you usually don't set this
+// yourself, defaults to `root` for user code") and which merely labels the
+// provenance of a reset in the `frc:widget.reset` event. Exposing it would let app
+// code claim a reset came from the widget or the agent when it came from the page,
+// so `reset()` stays argument-less on both the hook and the component ref. The
+// optional parameter survives on {@link WidgetHandle} below only so that a real SDK
+// handle still satisfies our interface; anyone who genuinely needs `trigger` can
+// reach the raw handle via the hook's `widget` and import the SDK's own type.
 import type {
   CreateWidgetOptions,
   FRCEventMap,
