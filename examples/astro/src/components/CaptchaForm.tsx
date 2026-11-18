@@ -1,9 +1,17 @@
-import { FriendlyCaptcha } from "@nexum-ag/friendly-captcha";
+import {
+  FriendlyCaptcha,
+  type APIEndpoint,
+  type FriendlyCaptchaHandle,
+  type StartMode,
+  type WidgetMode,
+  type WidgetState,
+} from "@nexum-ag/friendly-captcha";
 import { actions } from "astro:actions";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 interface Props {
   sitekey: string;
+  apiEndpoint: APIEndpoint;
 }
 
 type Status =
@@ -11,6 +19,28 @@ type Status =
   | { kind: "verifying" }
   | { kind: "ok"; solvedAt: string | null }
   | { kind: "error"; message: string };
+
+const RESPONSE_FIELD = "frc-captcha-response";
+
+const START_MODE_HINTS: Record<StartMode, string> = {
+  focus: "Starts when you focus a field in the form.",
+  auto: "Starts as soon as the widget mounts.",
+  none: "Waits for a press on the widget, so it is never hidden.",
+};
+
+const LANGUAGES = [
+  ["", "Browser default"],
+  ["en", "English"],
+  ["de", "Deutsch"],
+  ["fr", "Français"],
+  ["es", "Español"],
+  ["it", "Italiano"],
+] as const;
+
+const MODE_HINTS: Record<WidgetMode, string> = {
+  interactive: "Smart mode needs a click",
+  noninteractive: "Smart mode solves on its own",
+};
 
 /** Turn the API's ISO timestamp (nanosecond precision) into a readable local time. */
 function formatTimestamp(iso: string): string {
@@ -51,78 +81,155 @@ function MoonIcon() {
   );
 }
 
+function Attribution() {
+  return (
+    <p className="attribution">
+      This site is protected by{" "}
+      <a href="https://friendlycaptcha.com" target="_blank" rel="noopener">
+        Friendly Captcha
+      </a>{" "}
+      and its{" "}
+      <a href="https://friendlycaptcha.com/privacy/user-protection/" target="_blank" rel="noopener">
+        Privacy Policy
+      </a>{" "}
+      and{" "}
+      <a href="https://friendlycaptcha.com/legal/terms/" target="_blank" rel="noopener">
+        Terms of Use
+      </a>{" "}
+      apply.
+    </p>
+  );
+}
+
 /**
- * A React island that solves the captcha and verifies it through an Astro
- * Action (a server function). The token never has to be handled manually on the
- * server — but here we pass it explicitly to show the end-to-end flow.
+ * A playground for every widget option. The form posts its fields, including the
+ * hidden `frc-captcha-response` input the widget manages, to an Astro Action that
+ * verifies the response server-side.
  */
-export default function CaptchaForm({ sitekey }: Props) {
-  const [token, setToken] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+export default function CaptchaForm({ sitekey, apiEndpoint }: Props) {
+  const captchaRef = useRef<FriendlyCaptchaHandle>(null);
+  const [hideUntilNeeded, setHideUntilNeeded] = useState(true);
+  const [startMode, setStartMode] = useState<StartMode>("focus");
+  const [language, setLanguage] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">(() =>
     typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
       ? "dark"
       : "light",
   );
+  const [widgetState, setWidgetState] = useState<WidgetState>("init");
+  const [widgetMode, setWidgetMode] = useState<WidgetMode | undefined>(undefined);
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   // Mirror the chosen theme onto <html> so the surrounding page follows it too.
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-    // Switching theme recreates the widget (clearing its token without firing
-    // onExpire), so reset our local state to keep the Submit button honest.
-    setToken(null);
-    setStatus({ kind: "idle" });
-  }
-
-  async function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) {
-      return;
-    }
+    const formData = new FormData(event.currentTarget);
+    const sentRealToken = !String(formData.get(RESPONSE_FIELD) ?? "").startsWith(".");
     setStatus({ kind: "verifying" });
 
-    const { data, error } = await actions.verifyCaptcha({ response: token });
-    if (error) {
-      setStatus({ kind: "error", message: error.message });
-    } else {
-      setStatus({ kind: "ok", solvedAt: data.solvedAt });
+    const { data, error } = await actions.verifyCaptcha(formData);
+    setStatus(
+      error ? { kind: "error", message: error.message } : { kind: "ok", solvedAt: data.solvedAt },
+    );
+    // A token verifies only once; solve a fresh one for the next submit.
+    if (sentRealToken) {
+      captchaRef.current?.reset();
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="captcha-form">
+    <div className="playground">
       <button
         type="button"
         className="theme-toggle"
-        onClick={toggleTheme}
+        onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
       >
         {theme === "dark" ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      <FriendlyCaptcha
-        sitekey={sitekey}
-        theme={theme}
-        onComplete={setToken}
-        onExpire={() => setToken(null)}
-        onError={() => setToken(null)}
-      />
-
-      <button type="submit" disabled={!token || status.kind === "verifying"}>
-        {status.kind === "verifying" ? "Verifying…" : "Submit"}
-      </button>
-
-      {status.kind === "ok" && (
-        <p className="status ok">
-          ✅ Verified server-side
-          {status.solvedAt ? ` · solved at ${formatTimestamp(status.solvedAt)}` : ""}.
+      <fieldset className="options">
+        <legend>Widget options</legend>
+        <dl className="widget-status" aria-live="polite">
+          <dt>State</dt>
+          <dd>{widgetState}</dd>
+          <dt>Mode</dt>
+          <dd title={widgetMode ? MODE_HINTS[widgetMode] : "Decided when the widget activates"}>
+            {widgetMode ?? "pending"}
+          </dd>
+        </dl>
+        <label className="option option--inline">
+          <input
+            type="checkbox"
+            checked={hideUntilNeeded}
+            onChange={(event) => setHideUntilNeeded(event.target.checked)}
+          />
+          <code>hideUntilNeeded</code>
+        </label>
+        <label className="option">
+          <code>startMode</code>
+          <select
+            value={startMode}
+            onChange={(event) => setStartMode(event.target.value as StartMode)}
+          >
+            <option value="focus">focus</option>
+            <option value="auto">auto</option>
+            <option value="none">none</option>
+          </select>
+          <small>{START_MODE_HINTS[startMode]}</small>
+        </label>
+        <label className="option">
+          <code>language</code>
+          <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+            {LANGUAGES.map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="option">
+          <code>apiEndpoint</code> <span>{apiEndpoint} (from FRC_ENDPOINT)</span>
         </p>
-      )}
-      {status.kind === "error" && <p className="status error">❌ {status.message}</p>}
-    </form>
+      </fieldset>
+
+      <form onSubmit={handleSubmit} className="captcha-form">
+        <label className="option">
+          Email
+          <input name="email" type="email" placeholder="you@example.com" />
+        </label>
+
+        <FriendlyCaptcha
+          ref={captchaRef}
+          sitekey={sitekey}
+          apiEndpoint={apiEndpoint}
+          theme={theme}
+          startMode={startMode}
+          language={language || undefined}
+          hideUntilNeeded={hideUntilNeeded}
+          onStateChange={(state, { mode }) => {
+            setWidgetState(state);
+            setWidgetMode(mode);
+          }}
+        />
+        {hideUntilNeeded && <Attribution />}
+
+        <button type="submit" disabled={status.kind === "verifying"}>
+          {status.kind === "verifying" ? "Verifying…" : "Submit"}
+        </button>
+
+        {status.kind === "ok" && (
+          <p className="status ok">
+            ✅ Verified server-side
+            {status.solvedAt ? ` · solved at ${formatTimestamp(status.solvedAt)}` : ""}.
+          </p>
+        )}
+        {status.kind === "error" && <p className="status error">❌ {status.message}</p>}
+      </form>
+    </div>
   );
 }

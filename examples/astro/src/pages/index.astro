@@ -2,6 +2,7 @@
 import CaptchaForm from "../components/CaptchaForm.tsx";
 
 const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
+const apiEndpoint = import.meta.env.FRC_ENDPOINT ?? "global";
 ---
 
 <!doctype html>
@@ -31,14 +32,14 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
           />
           <h1 class="card__title">Friendly Captcha for React</h1>
           <p class="card__subtitle">
-            A demo of <code>@nexum-ag/friendly-captcha</code>. The widget below is verified
-            server-side by an Astro Action.
+            A playground for <code>@nexum-ag/friendly-captcha</code>. Try the widget options;
+            the form is verified server-side by an Astro Action.
           </p>
         </header>
 
         {
           sitekey ? (
-            <CaptchaForm client:load sitekey={sitekey} />
+            <CaptchaForm client:load sitekey={sitekey} apiEndpoint={apiEndpoint} />
           ) : (
             <p class="status status--error">
               Set <code>PUBLIC_FRC_SITEKEY</code> and <code>FRC_API_KEY</code> in{" "}
@@ -165,7 +166,8 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
         border-radius: 5px;
       }
 
-      /* React island: form, button, status */
+      /* React island: options, status, form */
+      .playground,
       .captcha-form {
         display: flex;
         flex-direction: column;
@@ -173,7 +175,110 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
         align-items: stretch;
       }
 
-      .captcha-form button {
+      .options {
+        position: relative;
+        margin: 0;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .options legend {
+        padding: 0 0.35rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .option {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        font-size: 0.9rem;
+      }
+
+      .option code {
+        align-self: flex-start;
+      }
+
+      .option--inline {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .option small,
+      .option span {
+        color: var(--text-muted);
+      }
+
+      .option select,
+      .option input:not([type="checkbox"]) {
+        font: inherit;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.45rem 0.6rem;
+      }
+
+      .widget-status {
+        position: absolute;
+        top: 0.9rem;
+        right: 1rem;
+        margin: 0;
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 0.15rem 0.5rem;
+        font-size: 0.75rem;
+        text-align: right;
+      }
+
+      .widget-status dt {
+        color: var(--text-muted);
+      }
+
+      .widget-status dd {
+        margin: 0;
+        font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+      }
+
+      .captcha-form .frc-captcha {
+        transition:
+          opacity 0.3s ease,
+          height 0.3s ease,
+          margin-bottom 0.3s ease;
+      }
+
+      @starting-style {
+        .captcha-form .frc-captcha {
+          opacity: 0;
+          height: 0 !important;
+          margin-bottom: -1rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .captcha-form .frc-captcha {
+          transition: none;
+        }
+      }
+
+      .attribution {
+        margin: 0;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: var(--text-muted);
+      }
+
+      .attribution a {
+        color: inherit;
+      }
+
+      .playground button {
         appearance: none;
         border: none;
         border-radius: 10px;
@@ -186,21 +291,21 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
         transition: background-color 0.15s ease, transform 0.05s ease;
       }
 
-      .captcha-form button:hover:not(:disabled) {
+      .playground button:hover:not(:disabled) {
         background: var(--accent-hover);
       }
 
-      .captcha-form button:active:not(:disabled) {
+      .playground button:active:not(:disabled) {
         transform: translateY(1px);
       }
 
-      .captcha-form button:disabled {
+      .playground button:disabled {
         opacity: 0.55;
         cursor: not-allowed;
       }
 
       /* Secondary outline icon button, pinned to the card's top-right corner. */
-      .captcha-form button.theme-toggle {
+      .playground button.theme-toggle {
         position: absolute;
         top: 2rem;
         right: 2rem;
@@ -214,12 +319,8 @@ const sitekey = import.meta.env.PUBLIC_FRC_SITEKEY;
         border: 1px solid var(--border);
       }
 
-      .captcha-form button.theme-toggle:hover:not(:disabled) {
+      .playground button.theme-toggle:hover:not(:disabled) {
         color: var(--text);
-        background: var(--bg-accent);
-      }
-
-      .captcha-form button.theme-toggle:hover:not(:disabled) {
         background: var(--bg-accent);
       }
 
