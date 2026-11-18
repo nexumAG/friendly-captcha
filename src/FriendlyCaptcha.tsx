@@ -53,7 +53,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       onReset,
       onStateChange,
       className,
-      style,
+      hidden,
       ...divProps
     } = props;
 
@@ -89,7 +89,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       <div
         {...divProps}
         ref={setWidgetRef}
-        style={visible ? style : { ...style, display: "none" }}
+        hidden={hidden || !visible || undefined}
         className={className ? `frc-captcha ${className}` : "frc-captcha"}
       />
     );

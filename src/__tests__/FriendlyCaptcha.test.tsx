@@ -69,7 +69,7 @@ describe("<FriendlyCaptcha hideUntilNeeded />", () => {
       <FriendlyCaptcha sitekey="FCTEST" hideUntilNeeded style={{ margin: 4 }} />,
     );
     const el = container.querySelector("div.frc-captcha") as HTMLElement;
-    expect(el.style.display).toBe("none");
+    expect(el.hidden).toBe(true);
     expect(el.style.margin).toBe("4px");
     expect(createdWidgets[0]?.element).toBe(el);
 
@@ -80,7 +80,17 @@ describe("<FriendlyCaptcha hideUntilNeeded />", () => {
         response: ".ACTIVATED",
       });
     });
-    expect(el.style.display).toBe("");
-    expect(el.style.margin).toBe("4px");
+    expect(el.hidden).toBe(false);
+    expect(el.hasAttribute("hidden")).toBe(false);
+  });
+
+  it("stays hidden when the widget is recreated, which clears the element's style attribute", () => {
+    const { container, rerender } = render(
+      <FriendlyCaptcha sitekey="FCTEST" hideUntilNeeded language="en" />,
+    );
+    rerender(<FriendlyCaptcha sitekey="FCTEST" hideUntilNeeded language="de" />);
+
+    expect(createdWidgets).toHaveLength(2);
+    expect((container.querySelector("div.frc-captcha") as HTMLElement).hidden).toBe(true);
   });
 });

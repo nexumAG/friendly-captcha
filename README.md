@@ -155,7 +155,7 @@ Once shown, it stays shown for the lifetime of the widget, including after `rese
 </form>
 ```
 
-The component hides its container with an inline `display: none`. With the hook, the hiding is up to you: the hook returns `visible` and you hide the element yourself:
+The component hides its container with the `hidden` attribute. With the hook, the hiding is up to you: the hook returns `visible` and you hide the element yourself. Use the `hidden` attribute too, not an inline `style`: the SDK writes its own inline styles onto the element and removes the whole `style` attribute when a widget is destroyed, so an inline `display: none` disappears whenever the widget is recreated (for example after a `theme` or `language` change).
 
 ```tsx
 const { ref, visible } = useFriendlyCaptcha({
@@ -167,6 +167,35 @@ const { ref, visible } = useFriendlyCaptcha({
 ```
 
 With `hideUntilNeeded` off, `visible` is always `true` and nothing about the output changes.
+
+If your CSS sets `display` on the widget element, it overrides `hidden`. Add `.frc-captcha[hidden] { display: none; }` to keep it hidden.
+
+#### Animating the reveal
+
+The widget switches from hidden to shown in one frame. To ease it in, give it a starting style with [`@starting-style`](https://developer.mozilla.org/docs/Web/CSS/@starting-style), which applies the moment an element stops being `display: none`:
+
+```css
+.frc-captcha {
+  transition:
+    opacity 0.3s ease,
+    height 0.3s ease;
+}
+
+@starting-style {
+  .frc-captcha {
+    opacity: 0;
+    height: 0 !important; /* the SDK sets an inline height */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frc-captcha {
+    transition: none;
+  }
+}
+```
+
+Browsers without `@starting-style` show the widget at once. Hiding is not worth animating: once shown, the widget only hides again when it is recreated, and then there is nothing left to fade out.
 
 > [!NOTE]
 >
