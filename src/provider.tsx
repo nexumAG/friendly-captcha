@@ -48,12 +48,12 @@ export function FriendlyCaptchaProvider({ sdk, options, children }: FriendlyCapt
   // Options are fixed for the provider's lifetime; capture once so the resolver
   // identity stays stable across re-renders.
   const optionsRef = useRef(options);
+  const ownSdkRef = useRef<FriendlyCaptchaSDK | undefined>(undefined);
   const resolver = useMemo<SdkResolver>(() => {
     if (sdk) {
       return () => sdk;
     }
-    let instance: FriendlyCaptchaSDK | undefined;
-    return () => (instance ??= new FriendlyCaptchaSDKClass(optionsRef.current));
+    return () => (ownSdkRef.current ??= new FriendlyCaptchaSDKClass(optionsRef.current));
   }, [sdk]);
 
   return <SdkContext.Provider value={resolver}>{children}</SdkContext.Provider>;
@@ -85,6 +85,8 @@ export function useFriendlyCaptchaSdk(override?: FriendlyCaptchaSDK): FriendlyCa
   const resolve = useSdkResolver(override);
   const [sdk, setSdk] = useState<FriendlyCaptchaSDK | null>(null);
   useEffect(() => {
+    // The SDK touches `window`, so it can only be constructed after mount, never during render.
+    // oxlint-disable-next-line react/set-state-in-effect, react/no-deriving-state-in-effects
     setSdk(resolve());
   }, [resolve]);
   return sdk;

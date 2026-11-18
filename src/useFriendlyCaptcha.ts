@@ -216,6 +216,8 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
         setMode(undefined);
       }
     };
+    // `sdkOverride` is read through `resolveSdkRef`; listing it recreates the widget on a new SDK.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [element, sdkOverride, sitekey, startMode, theme, language, formFieldName, apiEndpoint]);
 
   const reset = useCallback(() => {
