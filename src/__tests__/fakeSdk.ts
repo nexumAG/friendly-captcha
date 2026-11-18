@@ -30,6 +30,7 @@ export class FakeWidget {
   reset = vi.fn();
   destroy = vi.fn(() => {
     this.isDestroyed = true;
+    this.element.removeAttribute("style");
   });
 
   constructor(

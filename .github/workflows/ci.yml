@@ -38,9 +38,8 @@ jobs:
       # node16/nodenext — the resolution mode most consumers are on.
       - run: npm run check:pkg
 
-  # Typechecks the Astro example against the built library, so a change to the
-  # public API (or a rename) can't silently break the only end-to-end demo.
-  # `astro build` is not run: the example is `output: "server"` with no adapter.
+  # Typechecks and builds the Astro example against the built library, so a change
+  # to the public API (or a rename) can't silently break the only end-to-end demo.
   example:
     runs-on: ubuntu-latest
     name: astro example
@@ -55,4 +54,6 @@ jobs:
       - run: npm ci
         working-directory: examples/astro
       - run: npm run typecheck
+        working-directory: examples/astro
+      - run: npm run build
         working-directory: examples/astro

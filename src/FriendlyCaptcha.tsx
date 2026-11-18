@@ -46,12 +46,14 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       formFieldName,
       apiEndpoint,
       sdk,
+      hideUntilNeeded,
       onComplete,
       onError,
       onExpire,
       onReset,
       onStateChange,
       className,
+      hidden,
       ...divProps
     } = props;
 
@@ -60,6 +62,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       reset,
       getResponse,
       element,
+      visible,
     } = useFriendlyCaptcha<HTMLDivElement>({
       sitekey,
       startMode,
@@ -68,6 +71,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       formFieldName,
       apiEndpoint,
       sdk,
+      hideUntilNeeded,
       onComplete,
       onError,
       onExpire,
@@ -85,6 +89,7 @@ export const FriendlyCaptcha = forwardRef<FriendlyCaptchaHandle, FriendlyCaptcha
       <div
         {...divProps}
         ref={setWidgetRef}
+        hidden={hidden || !visible || undefined}
         className={className ? `frc-captcha ${className}` : "frc-captcha"}
       />
     );

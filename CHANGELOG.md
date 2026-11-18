@@ -5,6 +5,41 @@ All notable changes to this package are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-18
+
+### Added
+
+- **`hideUntilNeeded`** on the component and the hook, for Friendly Captcha's
+  [invisible setup](https://developer.friendlycaptcha.com/docs/v2/guides/invisible-captcha).
+  The widget stays hidden while Smart mode solves silently, and is shown once Smart mode
+  asks for a click, the widget hasn't completed 5 seconds after it started requesting a
+  challenge (`REVEAL_AFTER_MS`), or it errors or expires. Once shown it stays shown, also
+  after `reset()`. The component hides its container with the `hidden` attribute; the
+  hook returns `visible` for you to apply. It never hides a widget with
+  `startMode: "none"`, which only starts when pressed. Off by default, and output is
+  unchanged while it is off. Use it only with the Smart widget mode, and render Friendly Captcha's
+  attribution yourself; see the README.
+- `mode` on the hook's result: `"interactive"`, `"noninteractive"`, or `undefined` before
+  activation.
+- `onStateChange` now receives the event detail as a second argument (`state`, `mode`,
+  `response`, `error`, `id`), typed as the newly exported `FRCWidgetStateChangeEventData`.
+  Existing one-argument handlers keep working.
+
+### Changed
+
+- `@friendlycaptcha/sdk` now requires `^1.1.5` (was `^1.0.2`). This picks up the SDK's
+  fixes for a destroyed widget that kept retrying under React StrictMode (`1.0.3`) and
+  for widgets stuck on "Waiting for connection" when the agent iframe fails to load
+  (`1.1.2`).
+
+### Documentation
+
+- The README explains why hiding the widget with CSS alone breaks submissions whenever
+  Friendly Captcha asks for a click, and that the official guide's sample reads `e.mode`
+  where the mode is actually on `e.detail.mode`.
+- `verifyCaptchaResponse` documents that `.`-prefixed responses (`.UNACTIVATED` and so on)
+  are placeholders, never real tokens.
+
 ## [1.0.0] - 2026-08-05
 
 First stable release. The public API is now covered by semantic versioning: breaking
@@ -101,7 +136,8 @@ No functional change since `1.0.0-beta.7` other than the removal below.
   hook, `FriendlyCaptchaProvider` for sharing a configured SDK instance, and the
   runtime-agnostic `verifyCaptchaResponse` helper on the `/server` entry point.
 
-[unreleased]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/nexumAG/friendly-captcha/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.7...v1.0.0
 [1.0.0-beta.7]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.6...v1.0.0-beta.7
 [1.0.0-beta.6]: https://github.com/nexumAG/friendly-captcha/compare/v1.0.0-beta.1...v1.0.0-beta.6

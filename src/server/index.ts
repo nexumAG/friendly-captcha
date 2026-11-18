@@ -124,6 +124,11 @@ interface SiteverifyResponseBody {
  * returned `success` field, never on the HTTP status. This helper never throws:
  * transport errors are returned as a failure with `errorCode: "network_error"`.
  *
+ * A submitted value that starts with `"."` (`.UNACTIVATED`, `.ACTIVATED`, `.EXPIRED`, …)
+ * is a placeholder the widget writes before it has a token, never a real token, and
+ * siteverify rejects it with `response_invalid`. Seeing one usually means the form was
+ * submitted before the widget finished, often because it was hidden while it needed a click.
+ *
  * @example
  * ```ts
  * const result = await verifyCaptchaResponse({

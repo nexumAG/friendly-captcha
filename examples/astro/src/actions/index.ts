@@ -4,16 +4,25 @@ import { z } from "astro:schema";
 
 export const server = {
   /**
-   * Server function that verifies a Friendly Captcha response token.
+   * Server function that verifies the form's Friendly Captcha response.
    *
-   * The API key only ever lives on the server. The client calls this action
-   * with the token produced by the widget; verification happens here.
+   * The API key only ever lives on the server. The widget keeps the response in a
+   * hidden `frc-captcha-response` input, so it arrives with the rest of the form.
    */
   verifyCaptcha: defineAction({
+    accept: "form",
     input: z.object({
-      response: z.string().min(1, "Please complete the captcha."),
+      "frc-captcha-response": z.string(),
     }),
-    handler: async ({ response }) => {
+    handler: async (input) => {
+      const response = input["frc-captcha-response"];
+      if (response.startsWith(".")) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: `The captcha hasn't finished yet: the form sent the placeholder ${response}.`,
+        });
+      }
+
       const apiKey = import.meta.env.FRC_API_KEY;
       if (!apiKey) {
         throw new ActionError({

@@ -1,20 +1,26 @@
 import { act, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useFriendlyCaptcha, type UseFriendlyCaptchaOptions } from "../useFriendlyCaptcha";
+import {
+  REVEAL_AFTER_MS,
+  useFriendlyCaptcha,
+  type UseFriendlyCaptchaOptions,
+} from "../useFriendlyCaptcha";
 import { resetSharedSdk } from "../sdk";
 import { createdWidgets, emit, resetFakeSdk } from "./fakeSdk";
 
 vi.mock("@friendlycaptcha/sdk", () => import("./fakeSdk"));
 
 function Harness(props: UseFriendlyCaptchaOptions) {
-  const { ref, state, response, solved, error } = useFriendlyCaptcha(props);
+  const { ref, state, response, solved, error, mode, visible } = useFriendlyCaptcha(props);
   return (
     <div>
       <span data-testid="state">{state}</span>
       <span data-testid="response">{response ?? ""}</span>
       <span data-testid="solved">{String(solved)}</span>
       <span data-testid="error">{error?.code ?? ""}</span>
+      <span data-testid="mode">{mode ?? ""}</span>
+      <span data-testid="visible">{String(visible)}</span>
       <div ref={ref} data-testid="mount" />
     </div>
   );
@@ -31,7 +37,22 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
+
+function emitState(state: string, extra: Record<string, unknown> = {}): void {
+  act(() => {
+    emit(mountEl(), "frc:widget.statechange", {
+      state,
+      response: `.${state.toUpperCase()}`,
+      ...extra,
+    });
+  });
+}
+
+function shownText(): string | null {
+  return screen.getByTestId("visible").textContent;
+}
 
 describe("useFriendlyCaptcha", () => {
   it("creates a widget on the mounted element", () => {
@@ -156,5 +177,125 @@ describe("useFriendlyCaptcha", () => {
     );
     const live = createdWidgets.filter((w) => !w.isDestroyed);
     expect(live).toHaveLength(1);
+  });
+});
+
+describe("useFriendlyCaptcha mode and hideUntilNeeded", () => {
+  it("passes the event detail to onStateChange and exposes mode", () => {
+    const onStateChange = vi.fn();
+    render(<Harness sitekey="FCTEST" onStateChange={onStateChange} />);
+    expect(screen.getByTestId("mode").textContent).toBe("");
+
+    emitState("activated", { mode: "noninteractive" });
+
+    expect(onStateChange).toHaveBeenCalledWith(
+      "activated",
+      expect.objectContaining({
+        state: "activated",
+        mode: "noninteractive",
+        response: ".ACTIVATED",
+      }),
+    );
+    expect(screen.getByTestId("mode").textContent).toBe("noninteractive");
+  });
+
+  it("is always visible when the option is off", () => {
+    vi.useFakeTimers();
+    render(<Harness sitekey="FCTEST" />);
+    expect(shownText()).toBe("true");
+
+    emitState("activated", { mode: "noninteractive" });
+    emitState("requesting", { mode: "noninteractive" });
+    act(() => {
+      vi.advanceTimersByTime(REVEAL_AFTER_MS);
+    });
+    expect(shownText()).toBe("true");
+  });
+
+  it("starts hidden and shows when Smart mode needs a click", () => {
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+    expect(shownText()).toBe("false");
+
+    emitState("activated", { mode: "interactive" });
+    expect(shownText()).toBe("true");
+  });
+
+  it("stays hidden through a silent solve", () => {
+    vi.useFakeTimers();
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+
+    emitState("activated", { mode: "noninteractive" });
+    emitState("requesting", { mode: "noninteractive" });
+    emitState("solving", { mode: "noninteractive" });
+    emitState("verifying", { mode: "noninteractive" });
+    act(() => {
+      emit(mountEl(), "frc:widget.statechange", {
+        state: "completed",
+        mode: "noninteractive",
+        response: "token",
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(REVEAL_AFTER_MS * 2);
+    });
+
+    expect(screen.getByTestId("solved").textContent).toBe("true");
+    expect(shownText()).toBe("false");
+  });
+
+  it("shows when requesting has not completed in time", () => {
+    vi.useFakeTimers();
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+
+    emitState("requesting", { mode: "noninteractive" });
+    act(() => {
+      vi.advanceTimersByTime(REVEAL_AFTER_MS - 1);
+    });
+    expect(shownText()).toBe("false");
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(shownText()).toBe("true");
+  });
+
+  it("does not show late after a reset cancels the wait", () => {
+    vi.useFakeTimers();
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+
+    emitState("requesting", { mode: "noninteractive" });
+    act(() => {
+      emit(mountEl(), "frc:widget.reset", { state: "init", response: ".UNSTARTED" });
+    });
+    emitState("init");
+    act(() => {
+      vi.advanceTimersByTime(REVEAL_AFTER_MS);
+    });
+    expect(shownText()).toBe("false");
+  });
+
+  it('is always visible with startMode "none", which waits for a press on the widget', () => {
+    render(<Harness sitekey="FCTEST" startMode="none" hideUntilNeeded />);
+    expect(shownText()).toBe("true");
+  });
+
+  it.each(["error", "expired"])("shows on %s", (state) => {
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+    emitState(state);
+    expect(shownText()).toBe("true");
+  });
+
+  it("stays visible after reset", () => {
+    render(<Harness sitekey="FCTEST" hideUntilNeeded />);
+    emitState("activated", { mode: "interactive" });
+    expect(shownText()).toBe("true");
+
+    act(() => {
+      emit(mountEl(), "frc:widget.reset", { state: "init", response: ".UNSTARTED" });
+    });
+    emitState("init");
+
+    expect(screen.getByTestId("mode").textContent).toBe("");
+    expect(shownText()).toBe("true");
   });
 });
