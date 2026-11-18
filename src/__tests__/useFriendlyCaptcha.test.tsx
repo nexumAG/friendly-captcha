@@ -274,6 +274,11 @@ describe("useFriendlyCaptcha mode and hideUntilNeeded", () => {
     expect(shownText()).toBe("false");
   });
 
+  it('is always visible with startMode "none", which waits for a press on the widget', () => {
+    render(<Harness sitekey="FCTEST" startMode="none" hideUntilNeeded />);
+    expect(shownText()).toBe("true");
+  });
+
   it.each(["error", "expired"])("shows on %s", (state) => {
     render(<Harness sitekey="FCTEST" hideUntilNeeded />);
     emitState(state);

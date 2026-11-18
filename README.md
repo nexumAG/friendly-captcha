@@ -171,7 +171,7 @@ With `hideUntilNeeded` off, `visible` is always `true` and nothing about the out
 > [!NOTE]
 >
 > - **Attribution:** this package doesn't render the attribution, because you'll want it in your site's language. Keep the three links.
-> - **Starting while hidden:** with the default `startMode: "focus"` the widget starts when the visitor focuses anything in the surrounding `<form>`, which works while it is hidden. A hidden widget outside a `<form>` never starts in `"focus"` mode; use `startMode: "auto"` there.
+> - **Starting while hidden:** with the default `startMode: "focus"` the widget starts when the visitor focuses anything in the surrounding `<form>`, which works while it is hidden. A hidden widget outside a `<form>` never starts in `"focus"` mode; use `startMode: "auto"` there. With `startMode: "none"` the visitor has to press the widget to start it, so `hideUntilNeeded` never hides it.
 
 > [!WARNING]
 > **Don't hide the widget any other way.** Hiding it yourself with `sr-only`, `visually-hidden`, `display: none` or similar, without `hideUntilNeeded`, works only until Friendly Captcha asks for a click, which it can do at any time in Smart mode. The visitor can't click a widget they can't see, so it stays at `.UNACTIVATED` or `.ACTIVATED`, the form submits that placeholder, and siteverify rejects it with `response_invalid`. That is what happened on nexum.com.
@@ -208,7 +208,7 @@ if (!result.success) {
 > [!NOTE]
 > A submitted value that starts with `.` (`.UNACTIVATED`, `.ACTIVATED`, `.EXPIRED`, …) is a placeholder the widget writes before it has a token, never a real token. If you see these in failed verifications, the form was submitted before the widget finished — often because the widget was hidden while it needed a click (see [Hiding the widget](#-hiding-the-widget)).
 
-See [`examples/astro`](./examples/astro) for an end-to-end demo using an Astro Action (a server function) to verify the token.
+See [`examples/astro`](./examples/astro) for a playground with every widget option, including `hideUntilNeeded`. It shows the widget's state and the mode Smart mode picked, and verifies the submitted form with an Astro Action (a server function).
 
 ## 🛠️ Configuration
 

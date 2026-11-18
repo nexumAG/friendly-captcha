@@ -31,7 +31,8 @@ export interface UseFriendlyCaptchaOptions extends WidgetConfig, FriendlyCaptcha
    * Keep the widget hidden while Smart mode solves it silently, and report `visible: true`
    * once the visitor has to act or should see what is happening: Smart mode asks for a
    * click, solving takes longer than {@link REVEAL_AFTER_MS}, or the widget errors or
-   * expires. Once shown it stays shown, including after `reset()`.
+   * expires. Once shown it stays shown, including after `reset()`. Ignored with
+   * `startMode: "none"`, where the visitor has to press the widget to start it.
    *
    * Only use this with the Smart widget mode, and show Friendly Captcha's attribution
    * yourself while the widget can be hidden. See the README.
@@ -233,7 +234,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     error,
     solved: response !== null,
     mode,
-    visible: !hideUntilNeeded || revealed,
+    visible: !hideUntilNeeded || startMode === "none" || revealed,
     reset,
     getResponse,
     widget,
