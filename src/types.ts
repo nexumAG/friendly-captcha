@@ -15,6 +15,7 @@
 export type {
   APIEndpoint,
   CreateWidgetOptions,
+  FRCWidgetStateChangeEventData,
   FriendlyCaptchaSDKOptions,
   StartMode,
   WidgetErrorCode,
@@ -30,6 +31,7 @@ export type {
 import type {
   CreateWidgetOptions,
   FRCEventMap,
+  FRCWidgetStateChangeEventData,
   StartMode,
   WidgetErrorData,
   WidgetResetOptions,
@@ -118,6 +120,9 @@ export interface FriendlyCaptchaCallbacks {
   onExpire?: () => void;
   /** Fired when the widget is reset (programmatically or by the user). */
   onReset?: () => void;
-  /** Fired on every widget state transition. */
-  onStateChange?: (state: WidgetState) => void;
+  /**
+   * Fired on every widget state transition. `detail` is the full event detail;
+   * `detail.mode` tells you whether Smart mode needs a click (`"interactive"`).
+   */
+  onStateChange?: (state: WidgetState, detail: FRCWidgetStateChangeEventData) => void;
 }

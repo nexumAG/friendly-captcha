@@ -1,7 +1,7 @@
 export { FriendlyCaptcha } from "./FriendlyCaptcha";
 export type { FriendlyCaptchaHandle, FriendlyCaptchaProps } from "./FriendlyCaptcha";
 
-export { useFriendlyCaptcha } from "./useFriendlyCaptcha";
+export { REVEAL_AFTER_MS, useFriendlyCaptcha } from "./useFriendlyCaptcha";
 export type { UseFriendlyCaptchaOptions, UseFriendlyCaptchaResult } from "./useFriendlyCaptcha";
 
 // `useSdkResolver` / `SdkResolver` are deliberately not exported: they are the
@@ -14,6 +14,7 @@ export { getSharedSdk, resetSharedSdk, setSharedSdk } from "./sdk";
 export type {
   APIEndpoint,
   CreateWidgetOptions,
+  FRCWidgetStateChangeEventData,
   FriendlyCaptchaCallbacks,
   FriendlyCaptchaSDK,
   FriendlyCaptchaSDKOptions,

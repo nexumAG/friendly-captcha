@@ -11,6 +11,8 @@ Modern, type-safe React bindings for [Friendly Captcha v2](https://developer.fri
 
 🧩 [Usage](#-usage)
 
+🫥 [Hiding the widget](#-hiding-the-widget)
+
 🔒 [Server-side verification](#-server-side-verification)
 
 🛠️ [Configuration](#-configuration)
@@ -79,7 +81,7 @@ For full control, `useFriendlyCaptcha()` returns a `ref` to attach plus reactive
 import { useFriendlyCaptcha } from "@nexum-ag/friendly-captcha";
 
 function Captcha() {
-  const { ref, state, response, solved, error, reset } = useFriendlyCaptcha({
+  const { ref, state, response, solved, error, mode, reset } = useFriendlyCaptcha({
     sitekey: "FCMxxxxxxxxxxxxxxx",
     onComplete: (token) => console.log("solved", token),
   });
@@ -96,6 +98,8 @@ function Captcha() {
 > [!NOTE]
 > `response` is the normalized token — internal sentinel values (e.g. `.SOLVING`) are surfaced as `null`. Use `solved` for a simple "is there a token" check.
 
+`mode` is `"interactive"` when Smart mode wants a click and `"noninteractive"` when it solves on its own. It is `undefined` until the widget has been activated.
+
 ### Props & options
 
 All of the SDK's [`createWidget` options](https://developer.friendlycaptcha.com/docs/v2/sdk/reference/sdk.createwidgetoptions) are accepted by both the component and the hook:
@@ -109,7 +113,71 @@ All of the SDK's [`createWidget` options](https://developer.friendlycaptcha.com/
 | `formFieldName` | `string \| null`              | `"frc-captcha-response"` | Hidden input name.                 |
 | `apiEndpoint`   | `"global" \| "eu" \| string`  | `"global"`               | Data residency / custom endpoint.  |
 
-Callbacks: `onComplete(token)`, `onError(error)`, `onExpire()`, `onReset()`, `onStateChange(state)`.
+The component and the hook also accept `hideUntilNeeded` (`boolean`, default `false`). See [Hiding the widget](#-hiding-the-widget).
+
+Callbacks: `onComplete(token)`, `onError(error)`, `onExpire()`, `onReset()`, `onStateChange(state, detail)`. `detail` is the `frc:widget.statechange` event detail (`state`, `mode`, `response`, `error`, `id`).
+
+## 🫥 Hiding the widget
+
+Friendly Captcha allows an [invisible setup](https://developer.friendlycaptcha.com/docs/v2/guides/invisible-captcha) under two conditions:
+
+1. **Your sitekey uses the Smart widget mode** (the default). In Smart mode the widget may solve on its own or may ask for a click. In One-click mode it always asks for a click, so never hide it.
+2. **You show Friendly Captcha's attribution** in the user flow whenever the widget can be hidden.
+
+Set `hideUntilNeeded` and the widget stays hidden while it solves silently. It appears as soon as the visitor has to act or should see what is happening:
+
+- Smart mode asks for a click (`mode === "interactive"`);
+- the widget has not completed 5 seconds after it started requesting a challenge (`REVEAL_AFTER_MS`);
+- the widget errors or the solution expires.
+
+Once shown, it stays shown for the lifetime of the widget, including after `reset()`, so a reset after a failed submit doesn't make the form jump.
+
+```tsx
+<form method="POST" action="/api/contact">
+  <input name="email" type="email" required />
+  <FriendlyCaptcha sitekey="FCMxxxxxxxxxxxxxxx" hideUntilNeeded />
+  <p>
+    This site is protected by{" "}
+    <a href="https://friendlycaptcha.com" target="_blank" rel="noopener">
+      Friendly Captcha
+    </a>{" "}
+    and its{" "}
+    <a href="https://friendlycaptcha.com/privacy/user-protection/" target="_blank" rel="noopener">
+      Privacy Policy
+    </a>{" "}
+    and{" "}
+    <a href="https://friendlycaptcha.com/legal/terms/" target="_blank" rel="noopener">
+      Terms of Use
+    </a>{" "}
+    apply.
+  </p>
+  <button type="submit">Send</button>
+</form>
+```
+
+The component hides its container with an inline `display: none`. With the hook, the hiding is up to you: the hook returns `visible` and you hide the element yourself:
+
+```tsx
+const { ref, visible } = useFriendlyCaptcha({
+  sitekey: "FCMxxxxxxxxxxxxxxx",
+  hideUntilNeeded: true,
+});
+
+<div ref={ref} className="frc-captcha" hidden={!visible} />;
+```
+
+With `hideUntilNeeded` off, `visible` is always `true` and nothing about the output changes.
+
+> [!NOTE]
+>
+> - **Attribution:** this package doesn't render the attribution, because you'll want it in your site's language. Keep the three links.
+> - **Starting while hidden:** with the default `startMode: "focus"` the widget starts when the visitor focuses anything in the surrounding `<form>`, which works while it is hidden. A hidden widget outside a `<form>` never starts in `"focus"` mode; use `startMode: "auto"` there.
+
+> [!WARNING]
+> **Don't hide the widget any other way.** Hiding it yourself with `sr-only`, `visually-hidden`, `display: none` or similar, without `hideUntilNeeded`, works only until Friendly Captcha asks for a click, which it can do at any time in Smart mode. The visitor can't click a widget they can't see, so it stays at `.UNACTIVATED` or `.ACTIVATED`, the form submits that placeholder, and siteverify rejects it with `response_invalid`. That is what happened on nexum.com.
+
+> [!TIP]
+> If you write your own listener from the official guide, note that its sample reads `e.mode`. The mode is on the event detail: `e.detail.mode`. `e.mode` is always `undefined`, so the widget would never be shown when a click is needed.
 
 ## 🔒 Server-side verification
 
@@ -136,6 +204,9 @@ if (!result.success) {
 
 > [!NOTE]
 > A `200` status does **not** mean the solution was valid — always branch on `result.success`. The helper never throws: transport failures come back as `{ success: false, errorCode: "network_error" }`.
+
+> [!NOTE]
+> A submitted value that starts with `.` (`.UNACTIVATED`, `.ACTIVATED`, `.EXPIRED`, …) is a placeholder the widget writes before it has a token, never a real token. If you see these in failed verifications, the form was submitted before the widget finished — often because the widget was hidden while it needed a click (see [Hiding the widget](#-hiding-the-widget)).
 
 See [`examples/astro`](./examples/astro) for an end-to-end demo using an Astro Action (a server function) to verify the token.
 

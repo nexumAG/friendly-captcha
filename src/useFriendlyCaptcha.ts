@@ -13,13 +13,32 @@ import type {
   WidgetConfig,
   WidgetErrorData,
   WidgetHandle,
+  WidgetMode,
   WidgetState,
 } from "./types";
+
+/**
+ * How long a `hideUntilNeeded` widget may stay in `"requesting"` without completing
+ * before it is shown, as recommended by Friendly Captcha's invisible-captcha guide.
+ */
+export const REVEAL_AFTER_MS = 5_000;
 
 /** Options accepted by {@link useFriendlyCaptcha}. */
 export interface UseFriendlyCaptchaOptions extends WidgetConfig, FriendlyCaptchaCallbacks {
   /** Use a specific SDK instance instead of the provider/shared one. */
   sdk?: FriendlyCaptchaSDK;
+  /**
+   * Keep the widget hidden while Smart mode solves it silently, and report `visible: true`
+   * once the visitor has to act or should see what is happening: Smart mode asks for a
+   * click, solving takes longer than {@link REVEAL_AFTER_MS}, or the widget errors or
+   * expires. Once shown it stays shown, including after `reset()`.
+   *
+   * Only use this with the Smart widget mode, and show Friendly Captcha's attribution
+   * yourself while the widget can be hidden. See the README.
+   *
+   * @defaultValue `false`
+   */
+  hideUntilNeeded?: boolean;
 }
 
 /** Value returned by {@link useFriendlyCaptcha}. */
@@ -34,6 +53,13 @@ export interface UseFriendlyCaptchaResult<E extends HTMLElement = HTMLDivElement
   error: WidgetErrorData | null;
   /** `true` once the widget has produced a verification token. */
   solved: boolean;
+  /**
+   * Whether Smart mode needs a click (`"interactive"`) or solves silently
+   * (`"noninteractive"`). `undefined` until the widget has been activated.
+   */
+  mode: WidgetMode | undefined;
+  /** Whether the widget should be shown. Always `true` unless `hideUntilNeeded` is set. */
+  visible: boolean;
   /** Reset the widget, clearing any progress and token. */
   reset: () => void;
   /** Imperatively read the current token (normalized), or `null`. */
@@ -69,6 +95,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     formFieldName,
     apiEndpoint,
     sdk: sdkOverride,
+    hideUntilNeeded = false,
     onComplete,
     onError,
     onExpire,
@@ -89,6 +116,8 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
   const [state, setState] = useState<WidgetState>("init");
   const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState<WidgetErrorData | null>(null);
+  const [mode, setMode] = useState<WidgetMode | undefined>(undefined);
+  const [revealed, setRevealed] = useState(false);
 
   const widgetRef = useRef<WidgetHandle | null>(null);
 
@@ -122,13 +151,30 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     setState(handle.getState());
     setResponse(normalizeResponse(handle.getResponse()));
     setError(null);
+    setMode(undefined);
+    setRevealed(false);
+
+    let revealTimer: ReturnType<typeof setTimeout> | undefined;
+    const reveal = () => setRevealed(true);
 
     const handleStateChange = (event: FRCWidgetStateChangeEvent) => {
       const detail = event.detail;
       setState(detail.state);
       setResponse(normalizeResponse(detail.response));
       setError(detail.state === "error" ? (detail.error ?? null) : null);
-      callbacksRef.current.onStateChange?.(detail.state);
+      setMode(detail.mode);
+
+      if (detail.state === "requesting") {
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(reveal, REVEAL_AFTER_MS);
+      } else if (detail.state === "completed") {
+        clearTimeout(revealTimer);
+      }
+      if (detail.mode === "interactive" || detail.state === "error" || detail.state === "expired") {
+        reveal();
+      }
+
+      callbacksRef.current.onStateChange?.(detail.state, detail);
     };
     const handleComplete = (event: FRCWidgetCompleteEvent) => {
       callbacksRef.current.onComplete?.(event.detail.response);
@@ -140,6 +186,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
       callbacksRef.current.onExpire?.();
     };
     const handleReset = () => {
+      clearTimeout(revealTimer);
       callbacksRef.current.onReset?.();
     };
 
@@ -150,6 +197,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     handle.addEventListener("frc:widget.reset", handleReset);
 
     return () => {
+      clearTimeout(revealTimer);
       handle.removeEventListener("frc:widget.statechange", handleStateChange);
       handle.removeEventListener("frc:widget.complete", handleComplete);
       handle.removeEventListener("frc:widget.error", handleError);
@@ -165,6 +213,7 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
         setState("init");
         setResponse(null);
         setError(null);
+        setMode(undefined);
       }
     };
   }, [element, sdkOverride, sitekey, startMode, theme, language, formFieldName, apiEndpoint]);
@@ -181,6 +230,8 @@ export function useFriendlyCaptcha<E extends HTMLElement = HTMLDivElement>(
     response,
     error,
     solved: response !== null,
+    mode,
+    visible: !hideUntilNeeded || revealed,
     reset,
     getResponse,
     widget,
