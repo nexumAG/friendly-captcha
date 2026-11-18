@@ -264,7 +264,13 @@ npm run dev
 - [**Vite**](https://vite.dev/) — library build (ESM + CJS + types) and the Vitest test runner.
 - [**Vitest**](https://vitest.dev/) — unit tests, jsdom + Testing Library.
 - [**oxc**](https://oxc.rs/) — `oxlint` for linting and `oxfmt` for formatting.
-- Published to [**npm**](https://www.npmjs.com/package/@nexum-ag/friendly-captcha) on each GitHub release (the version is taken from the release tag).
+- Published to [**npm**](https://www.npmjs.com/package/@nexum-ag/friendly-captcha) from GitHub Actions on each GitHub release, with a provenance attestation.
+
+### Releasing
+
+1. Add the release to `CHANGELOG.md` and bump the version without tagging: `npm version 1.2.0 --no-git-tag-version`.
+2. Merge to `main`.
+3. Publish a GitHub release whose tag is `v` plus the `package.json` version (`v1.2.0`). The publish workflow refuses a tag that doesn't match. A prerelease version such as `1.2.0-beta.1` goes to the matching npm dist-tag (`beta`), a stable one to `latest`.
 
 ## 🐾 Useful links
 
