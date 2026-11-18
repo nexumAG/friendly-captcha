@@ -10,6 +10,7 @@
     "typecheck": "astro check"
   },
   "dependencies": {
+    "@astrojs/node": "11.1.2",
     "@astrojs/react": "6.0.2",
     "@nexum-ag/friendly-captcha": "file:../..",
     "astro": "7.1.6",
