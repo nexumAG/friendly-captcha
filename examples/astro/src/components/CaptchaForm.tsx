@@ -7,7 +7,7 @@ import {
   type WidgetState,
 } from "@nexum-ag/friendly-captcha";
 import { actions } from "astro:actions";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 interface Props {
   sitekey: string;
@@ -23,24 +23,33 @@ type Status =
 const RESPONSE_FIELD = "frc-captcha-response";
 
 const START_MODE_HINTS: Record<StartMode, string> = {
-  focus: "Starts when you focus a field in the form.",
-  auto: "Starts as soon as the widget mounts.",
-  none: "Waits for a press on the widget, so it is never hidden.",
+  focus: "Starts when a field gets focus.",
+  auto: "Starts as soon as it mounts.",
+  none: "Starts on click, so it's never hidden.",
 };
 
-const LANGUAGES = [
-  ["", "Browser default"],
-  ["en", "English"],
-  ["de", "Deutsch"],
-  ["fr", "Français"],
-  ["es", "Español"],
-  ["it", "Italiano"],
-] as const;
+const LANGUAGES = ["en", "de", "fr", "es", "it"];
+
+const NARROW_SCREEN = "(max-width: 48rem)";
 
 const MODE_HINTS: Record<WidgetMode, string> = {
-  interactive: "Smart mode needs a click",
-  noninteractive: "Smart mode solves on its own",
+  interactive: "needs a click",
+  noninteractive: "solves itself",
 };
+
+const MODE_PENDING = "pending until activation";
+
+function Prop({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <label className="prop">
+      <span className="prop__name">{name}</span>
+      <span className="prop__punct" aria-hidden="true">
+        =
+      </span>
+      {children}
+    </label>
+  );
+}
 
 /** Turn the API's ISO timestamp (nanosecond precision) into a readable local time. */
 function formatTimestamp(iso: string): string {
@@ -50,34 +59,6 @@ function formatTimestamp(iso: string): string {
   }
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
     date,
-  );
-}
-
-/** Monocolor icons (inherit the button's `color` via `currentColor`). */
-function SunIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
   );
 }
 
@@ -108,6 +89,7 @@ function Attribution() {
  */
 export default function CaptchaForm({ sitekey, apiEndpoint }: Props) {
   const captchaRef = useRef<FriendlyCaptchaHandle>(null);
+  const panelRef = useRef<HTMLDetailsElement>(null);
   const [hideUntilNeeded, setHideUntilNeeded] = useState(true);
   const [startMode, setStartMode] = useState<StartMode>("focus");
   const [language, setLanguage] = useState("");
@@ -124,6 +106,12 @@ export default function CaptchaForm({ sitekey, apiEndpoint }: Props) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    if (panelRef.current && matchMedia(NARROW_SCREEN).matches) {
+      panelRef.current.open = false;
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,63 +130,71 @@ export default function CaptchaForm({ sitekey, apiEndpoint }: Props) {
   }
 
   return (
-    <div className="playground">
-      <button
-        type="button"
-        className="theme-toggle"
-        onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      >
-        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-      </button>
-
-      <fieldset className="options">
-        <legend>Widget options</legend>
-        <dl className="widget-status" aria-live="polite">
-          <dt>State</dt>
-          <dd>{widgetState}</dd>
-          <dt>Mode</dt>
-          <dd title={widgetMode ? MODE_HINTS[widgetMode] : "Decided when the widget activates"}>
-            {widgetMode ?? "pending"}
-          </dd>
-        </dl>
-        <label className="option option--inline">
-          <input
-            type="checkbox"
-            checked={hideUntilNeeded}
-            onChange={(event) => setHideUntilNeeded(event.target.checked)}
-          />
-          <code>hideUntilNeeded</code>
-        </label>
-        <label className="option">
-          <code>startMode</code>
-          <select
-            value={startMode}
-            onChange={(event) => setStartMode(event.target.value as StartMode)}
-          >
-            <option value="focus">focus</option>
-            <option value="auto">auto</option>
-            <option value="none">none</option>
-          </select>
-          <small>{START_MODE_HINTS[startMode]}</small>
-        </label>
-        <label className="option">
-          <code>language</code>
-          <select value={language} onChange={(event) => setLanguage(event.target.value)}>
-            {LANGUAGES.map(([code, name]) => (
-              <option key={code} value={code}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="option">
-          <code>apiEndpoint</code> <span>{apiEndpoint} (from FRC_ENDPOINT)</span>
-        </p>
-      </fieldset>
+    <>
+      <details ref={panelRef} className="props-panel" open>
+        <summary>
+          <span className="props-panel__tag">&lt;FriendlyCaptcha</span>
+          <span className="widget-state" data-state={widgetState} aria-live="polite">
+            {widgetState}
+          </span>
+        </summary>
+        <div className="props-panel__body">
+          <Prop name="hideUntilNeeded">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hideUntilNeeded}
+              onClick={() => setHideUntilNeeded((current) => !current)}
+            >
+              {`{${hideUntilNeeded}}`}
+            </button>
+          </Prop>
+          <Prop name="startMode">
+            <select
+              value={startMode}
+              onChange={(event) => setStartMode(event.target.value as StartMode)}
+            >
+              <option value="focus">"focus"</option>
+              <option value="auto">"auto"</option>
+              <option value="none">"none"</option>
+            </select>
+          </Prop>
+          <p className="prop__comment">{START_MODE_HINTS[startMode]}</p>
+          <Prop name="language">
+            <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+              <option value="">{"{undefined}"}</option>
+              {LANGUAGES.map((code) => (
+                <option key={code} value={code}>
+                  "{code}"
+                </option>
+              ))}
+            </select>
+          </Prop>
+          {!language && <p className="prop__comment">Follows the browser's language.</p>}
+          <Prop name="theme">
+            <select
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as "light" | "dark")}
+            >
+              <option value="light">"light"</option>
+              <option value="dark">"dark"</option>
+            </select>
+          </Prop>
+          <p className="prop">
+            <span className="prop__name">apiEndpoint</span>
+            <span className="prop__punct">=</span>
+            <span>"{apiEndpoint}"</span>
+          </p>
+          <p className="prop__comment">Set on the server by FRC_ENDPOINT.</p>
+          <p className="props-panel__tag">/&gt;</p>
+          <p className="prop__comment props-panel__mode">
+            mode: {widgetMode ? `${widgetMode}, ${MODE_HINTS[widgetMode]}` : MODE_PENDING}
+          </p>
+        </div>
+      </details>
 
       <form onSubmit={handleSubmit} className="captcha-form">
-        <label className="option">
+        <label className="field">
           Email
           <input name="email" type="email" placeholder="you@example.com" />
         </label>
@@ -230,6 +226,6 @@ export default function CaptchaForm({ sitekey, apiEndpoint }: Props) {
         )}
         {status.kind === "error" && <p className="status error">❌ {status.message}</p>}
       </form>
-    </div>
+    </>
   );
 }
